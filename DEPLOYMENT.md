@@ -17,6 +17,10 @@ This guide provides provider-neutral, step-by-step instructions for deploying th
 | `CLOUDINARY_CLOUD_NAME` | Cloudinary Account Cloud Name | `your_cloudinary_cloud_name` |
 | `CLOUDINARY_API_KEY` | Cloudinary API Key | `your_cloudinary_api_key` |
 | `CLOUDINARY_API_SECRET` | Cloudinary API Secret (Keep confidential on backend only!) | `your_cloudinary_api_secret` |
+| `OTP_PROVIDER` | OTP service provider mode (`mock` for development, `twilio` for production) | `mock` |
+| `TWILIO_ACCOUNT_SID` | Twilio Account SID (Optional for production SMS delivery) | `your_twilio_account_sid` |
+| `TWILIO_AUTH_TOKEN` | Twilio Auth Token (Optional for production SMS delivery) | `your_twilio_auth_token` |
+| `TWILIO_PHONE_NUMBER` | Twilio Phone Number (Optional for production SMS delivery) | `+1234567890` |
 | `NODE_ENV` | Environment mode (suppresses internal stack traces in errors) | `production` |
 
 ### Frontend Environment Variables (`frontend/.env`)

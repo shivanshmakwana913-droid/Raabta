@@ -22,8 +22,7 @@ const userSchema = new mongoose.Schema(
       required: true,
       unique: true,
       lowercase: true,
-      trim: true,
-      index: true
+      trim: true
     },
     email: {
       type: String,
@@ -147,7 +146,6 @@ userSchema.set('toJSON', {
   }
 });
 
-userSchema.index({ normalizedUsername: 1 }, { unique: true });
 userSchema.index({ name: 1, username: 1 });
 userSchema.index({ phoneNumber: 1 }, { unique: true, sparse: true });
 
