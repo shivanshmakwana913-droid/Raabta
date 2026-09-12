@@ -80,14 +80,11 @@ const RegisterPage = () => {
     }
     setErrorMessage('');
     setPhoneMessage('');
+    setDevOtpHint(null);
 
     try {
       setOtpLoading(true);
-      // We can trigger an OTP request via auth or user endpoint
-      const { data } = await api.post('/auth/phone/login/send-otp', { phoneNumber }).catch(async () => {
-        // If not registered yet, we can generate OTP directly from OTP service endpoint if available or via backend fallback
-        return { data: { cooldownSeconds: 60, devOtp: '123456' } };
-      });
+      const { data } = await api.post('/auth/phone/register/send-otp', { phoneNumber });
       setOtpSent(true);
       setPhoneMessage('Verification code sent to phone');
       if (data?.devOtp) {

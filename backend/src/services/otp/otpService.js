@@ -5,13 +5,12 @@ const MockOtpProvider = require('./providers/mockOtpProvider');
 const TwilioOtpProvider = require('./providers/twilioOtpProvider');
 
 class OtpService {
-  constructor() {
-    const providerType = process.env.OTP_PROVIDER || 'mock';
+  getProvider() {
+    const providerType = (process.env.OTP_PROVIDER || 'mock').toLowerCase();
     if (providerType === 'twilio') {
-      this.provider = new TwilioOtpProvider();
-    } else {
-      this.provider = new MockOtpProvider();
+      return new TwilioOtpProvider();
     }
+    return new MockOtpProvider();
   }
 
   async sendOtp(rawPhoneNumber) {
@@ -46,7 +45,8 @@ class OtpService {
       expiresAt
     });
 
-    const result = await this.provider.sendOtp(phoneNumber, otpCode);
+    const provider = this.getProvider();
+    const result = await provider.sendOtp(phoneNumber, otpCode);
 
     return {
       success: true,

@@ -13,20 +13,44 @@ class TwilioOtpProvider extends ProviderInterface {
       throw new Error('Twilio credentials not configured in production environment');
     }
 
-    // Stub for real Twilio client invocation when twilio package is installed
-    // const client = require('twilio')(this.accountSid, this.authToken);
-    // const message = await client.messages.create({
-    //   body: `Your Raabta security code is: ${otp}. Do not share it with anyone.`,
-    //   from: this.fromNumber,
-    //   to: phoneNumber
-    // });
+    try {
+      const url = `https://api.twilio.com/2010-04-01/Accounts/${this.accountSid}/Messages.json`;
+      const authHeader = 'Basic ' + Buffer.from(`${this.accountSid}:${this.authToken}`).toString('base64');
+      const bodyParams = new URLSearchParams({
+        To: phoneNumber,
+        From: this.fromNumber,
+        Body: `Your Raabta security code is: ${otp}. Do not share this code with anyone. Valid for 10 minutes.`
+      });
 
-    return {
-      success: true,
-      provider: 'twilio',
-      messageId: `twilio_stub_${Date.now()}`
-    };
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Authorization': authHeader,
+          'Content-Type': 'application/x-www-form-urlencoded'
+        },
+        body: bodyParams.toString()
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        console.error('[Twilio Error]:', data.code, data.message);
+        throw new Error(data.message || 'SMS delivery failed via provider');
+      }
+
+      return {
+        success: true,
+        provider: 'twilio',
+        messageId: data.sid
+      };
+    } catch (error) {
+      if (error.message && error.message.includes('Twilio credentials not configured')) {
+        throw error;
+      }
+      throw new Error(`SMS Provider Error: ${error.message || 'Failed to dispatch SMS code'}`);
+    }
   }
 }
 
 module.exports = TwilioOtpProvider;
+

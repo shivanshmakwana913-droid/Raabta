@@ -191,6 +191,7 @@ const SettingsModal = ({ onClose }) => {
   // Phone Management Handlers
   const handleSendPhoneOtp = async () => {
     clearAlerts();
+    setPhoneDevOtp(null);
     if (!inputPhone || inputPhone.trim().length < 8) {
       setErrorMsg('Please enter a valid phone number with country code (e.g. +1234567890)');
       return;

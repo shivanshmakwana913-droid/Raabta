@@ -306,11 +306,50 @@ const changePassword = async (req, res, next) => {
   }
 };
 
+// @desc    Send OTP to phone for user registration
+// @route   POST /api/auth/phone/register/send-otp
+// @access  Public
+const sendPhoneRegisterOtp = async (req, res, next) => {
+  try {
+    const { phoneNumber } = req.body;
+    if (!phoneNumber) {
+      res.status(400);
+      throw new Error('Phone number is required');
+    }
+
+    const normalizedPhone = User.normalizePhoneNumber(phoneNumber);
+    if (!normalizedPhone || normalizedPhone.length < 8) {
+      res.status(400);
+      throw new Error('Please enter a valid phone number with country code (e.g. +1234567890)');
+    }
+
+    // Check if phone number is already registered to another account
+    const existingUser = await User.findOne({ phoneNumber: normalizedPhone });
+    if (existingUser) {
+      res.status(400);
+      throw new Error('Phone number is already associated with another account');
+    }
+
+    const otpResult = await otpService.sendOtp(normalizedPhone);
+
+    res.status(200).json({
+      message: 'Verification code sent to phone',
+      phoneNumber: normalizedPhone,
+      cooldownSeconds: otpResult.cooldownSeconds,
+      devOtp: otpResult.devOtp
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 module.exports = {
   registerUser,
   loginUser,
+  sendPhoneRegisterOtp,
   sendPhoneLoginOtp,
   verifyPhoneLoginOtp,
   getMe,
   changePassword
 };
+

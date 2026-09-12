@@ -68,6 +68,18 @@ This guide provides provider-neutral, step-by-step instructions for deploying th
 - Make sure cloud providers support WebSockets (e.g., Render, Railway, DigitalOcean App Platform, Fly.io all support WebSockets natively).
 - Frontend `SocketContext` automatically connects to `VITE_SOCKET_URL` using JWT authorization handshakes.
 
+### E. Twilio Real SMS OTP Setup (Production)
+1. Sign up for a [Twilio Account](https://www.twilio.com/).
+2. Obtain your **Account SID**, **Auth Token**, and a verified **Twilio Phone Number** from the Twilio Console.
+3. Configure the following environment variables in your backend environment:
+   - `OTP_PROVIDER=twilio`
+   - `TWILIO_ACCOUNT_SID=your_account_sid`
+   - `TWILIO_AUTH_TOKEN=your_auth_token`
+   - `TWILIO_PHONE_NUMBER=+1234567890`
+4. If Twilio credentials are not configured or invalid, the backend will return clean user-friendly error messages without exposing secret keys or raw stack traces.
+5. In local development environments, keep `OTP_PROVIDER=mock` to test phone login & verification without incurring SMS charges.
+
+
 ---
 
 ## 3. Step-by-Step Deployment Instructions
