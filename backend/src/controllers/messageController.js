@@ -7,15 +7,15 @@ const {
   reactMessageService,
   searchMessagesService
 } = require('../services/messageService');
-const { uploadToCloudinary } = require('../config/cloudinary');
+const { uploadToCloudinary, uploadAudioToCloudinary } = require('../config/cloudinary');
 const mongoose = require('mongoose');
 
-// @desc    Send a new message via REST (text or image with optional replyTo)
+// @desc    Send a new message via REST (text, image, gif, sticker, or audio with optional replyTo)
 // @route   POST /api/messages
 // @access  Private
 const sendMessage = async (req, res, next) => {
   try {
-    const { conversationId, content, messageType, imageUrl, imagePublicId, replyTo } = req.body;
+    const { conversationId, content, messageType, imageUrl, imagePublicId, audioUrl, audioDuration, replyTo } = req.body;
 
     const message = await createMessageService({
       senderId: req.user._id,
@@ -24,6 +24,8 @@ const sendMessage = async (req, res, next) => {
       messageType,
       imageUrl,
       imagePublicId,
+      audioUrl,
+      audioDuration,
       replyTo
     });
 
@@ -113,6 +115,29 @@ const uploadImage = async (req, res, next) => {
   }
 };
 
+// @desc    Upload voice message audio to Cloudinary
+// @route   POST /api/messages/upload-audio
+// @access  Private
+const uploadAudio = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400);
+      throw new Error('Please provide a valid audio recording file');
+    }
+
+    const uploadResult = await uploadAudioToCloudinary(req.file.buffer, 'chat_voice_messages');
+
+    res.status(200).json({
+      status: 'ok',
+      url: uploadResult.url,
+      publicId: uploadResult.publicId,
+      duration: uploadResult.duration || 0
+    });
+  } catch (error) {
+    next(error);
+  }
+};
+
 // @desc    Get paginated messages for a conversation
 // @route   GET /api/messages/:conversationId
 // @access  Private
@@ -157,7 +182,7 @@ const getMessages = async (req, res, next) => {
       .populate('sender', 'name username avatar')
       .populate({
         path: 'replyTo',
-        select: 'content messageType imageUrl sender isDeleted',
+        select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
         populate: { path: 'sender', select: 'name username avatar' }
       })
       .populate('reactions.user', 'name username avatar')
@@ -256,6 +281,7 @@ module.exports = {
   deleteMessage,
   reactMessage,
   uploadImage,
+  uploadAudio,
   getMessages,
   markMessagesSeen,
   searchMessages

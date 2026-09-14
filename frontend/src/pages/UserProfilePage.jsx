@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { ArrowLeft, Send, User, Calendar, ShieldCheck, AlertCircle, Loader2, Flag, Share2, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Send, User, Calendar, ShieldCheck, AlertCircle, Flag, Share2, Copy, Check } from 'lucide-react';
 import api from '../services/api';
 import { formatLastSeen } from '../utils/dateFormatter';
 import ReportModal from '../components/report/ReportModal';
+import { RaabtaLoader } from '../components/common/RaabtaLoader';
 
 const UserProfilePage = () => {
   const { username } = useParams();
@@ -103,22 +104,23 @@ const UserProfilePage = () => {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      padding: '20px',
-      background: 'radial-gradient(circle at top center, #1e1b4b 0%, #0f172a 100%)'
+      padding: '24px 16px',
+      background: 'radial-gradient(circle at top center, #1e1b4b 0%, #0b0f19 70%)',
+      position: 'relative'
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel animate-slide-up" style={{
         width: '100%',
         maxWidth: '460px',
-        borderRadius: '24px',
+        borderRadius: '28px',
         padding: '32px',
         boxShadow: 'var(--shadow-lg)',
         position: 'relative'
       }}>
         {/* Toast Notification Banner */}
         {toastMsg && (
-          <div style={{
+          <div className="animate-fade-in" style={{
             position: 'absolute',
-            top: '-16px',
+            top: '-18px',
             left: '50%',
             transform: 'translateX(-50%)',
             background: 'var(--accent-gradient)',
@@ -126,7 +128,7 @@ const UserProfilePage = () => {
             padding: '8px 18px',
             borderRadius: '20px',
             fontSize: '0.82rem',
-            fontWeight: '600',
+            fontWeight: '700',
             boxShadow: '0 8px 24px var(--accent-glow)',
             zIndex: 10,
             display: 'flex',
@@ -141,20 +143,13 @@ const UserProfilePage = () => {
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }}>
           <button
             onClick={() => navigate(-1)}
+            className="btn-secondary"
             style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              fontSize: '0.88rem',
-              padding: '6px 10px',
-              borderRadius: '8px'
+              padding: '6px 12px',
+              fontSize: '0.84rem'
             }}
           >
-            <ArrowLeft size={18} /> Back
+            <ArrowLeft size={16} /> Back
           </button>
 
           <div style={{ display: 'flex', gap: '8px' }}>
@@ -162,18 +157,10 @@ const UserProfilePage = () => {
               <button
                 onClick={handleShareProfile}
                 title="Share Profile"
+                className="btn-secondary"
                 style={{
-                  background: 'var(--bg-primary)',
-                  border: '1px solid var(--border-color)',
-                  color: 'var(--text-primary)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '0.82rem',
                   padding: '6px 12px',
-                  borderRadius: '10px',
-                  fontWeight: '600'
+                  fontSize: '0.82rem'
                 }}
               >
                 <Share2 size={15} /> Share
@@ -184,29 +171,18 @@ const UserProfilePage = () => {
               <button
                 onClick={() => setIsReportOpen(true)}
                 title="Report User Profile"
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#f87171',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '0.82rem',
-                  padding: '6px 10px',
-                  borderRadius: '8px'
-                }}
+                className="action-icon-btn"
+                style={{ color: '#f87171' }}
               >
-                <Flag size={16} />
+                <Flag size={17} />
               </button>
             )}
           </div>
         </div>
 
         {loading ? (
-          <div style={{ textAlign: 'center', padding: '40px 0', color: 'var(--text-muted)' }}>
-            <Loader2 size={32} className="animate-spin" style={{ margin: '0 auto 12px auto', display: 'block' }} />
-            <span>Loading user profile...</span>
+          <div style={{ textAlign: 'center', padding: '40px 0' }}>
+            <RaabtaLoader message="Loading public profile..." />
           </div>
         ) : error || !profileUser ? (
           <div style={{ textAlign: 'center', padding: '32px 16px' }}>
@@ -226,7 +202,7 @@ const UserProfilePage = () => {
             <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '24px' }}>
               The profile for @{username} does not exist or has been removed.
             </p>
-            <Link to="/" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', padding: '10px 20px' }}>
+            <Link to="/" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-flex', padding: '10px 20px', borderRadius: '12px' }}>
               Return to Home
             </Link>
           </div>
@@ -255,22 +231,23 @@ const UserProfilePage = () => {
                     width: '16px',
                     height: '16px',
                     borderRadius: '50%',
-                    background: profileUser.isOnline ? 'var(--online)' : 'var(--text-muted)',
-                    border: '2px solid var(--bg-secondary)'
+                    background: profileUser.isOnline ? 'var(--status-online)' : 'var(--text-muted)',
+                    border: '2.5px solid var(--bg-secondary)',
+                    boxShadow: profileUser.isOnline ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none'
                   }}
                   title={profileUser.isOnline ? 'Online' : 'Offline'}
                 />
               </div>
 
-              <h2 style={{ fontSize: '1.5rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '4px' }}>
+              <h2 style={{ fontSize: '1.5rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.02em' }}>
                 {profileUser.name}
               </h2>
               <div
                 onClick={handleCopyUsername}
                 title="Click to copy username"
                 style={{
-                  fontSize: '0.95rem',
-                  fontWeight: '600',
+                  fontSize: '0.92rem',
+                  fontWeight: '700',
                   color: 'var(--accent-primary)',
                   marginBottom: '12px',
                   cursor: 'pointer',
@@ -289,7 +266,7 @@ const UserProfilePage = () => {
                   width: '8px',
                   height: '8px',
                   borderRadius: '50%',
-                  background: profileUser.isOnline ? 'var(--online)' : 'var(--text-muted)'
+                  background: profileUser.isOnline ? 'var(--status-online)' : 'var(--text-muted)'
                 }} />
                 {profileUser.isOnline ? 'Online Now' : profileUser.lastSeen ? `Last seen ${formatLastSeen(profileUser.lastSeen)}` : 'Offline'}
               </div>
@@ -298,13 +275,13 @@ const UserProfilePage = () => {
             {/* Bio Card */}
             {profileUser.bio && (
               <div style={{
-                background: 'var(--bg-primary)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '16px',
+                borderRadius: '18px',
                 padding: '16px 20px',
                 marginBottom: '20px'
               }}>
-                <div style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px' }}>
+                <div style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '6px', letterSpacing: '0.05em' }}>
                   About
                 </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.5, whiteSpace: 'pre-wrap' }}>
@@ -316,11 +293,11 @@ const UserProfilePage = () => {
             {/* Meta Stats */}
             <div style={{
               display: 'flex',
-              justifyContent: 'space-around',
-              background: 'var(--bg-primary)',
+              justify: 'space-around',
+              background: 'var(--bg-input)',
               border: '1px solid var(--border-color)',
-              borderRadius: '16px',
-              padding: '12px 16px',
+              borderRadius: '18px',
+              padding: '14px 16px',
               marginBottom: '24px',
               fontSize: '0.82rem',
               color: 'var(--text-secondary)'
@@ -331,7 +308,7 @@ const UserProfilePage = () => {
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <ShieldCheck size={15} color="var(--accent-primary)" />
-                <span>Verified User</span>
+                <span>Verified Member</span>
               </div>
             </div>
 
@@ -343,6 +320,7 @@ const UserProfilePage = () => {
               style={{
                 width: '100%',
                 padding: '14px',
+                borderRadius: '14px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -351,9 +329,7 @@ const UserProfilePage = () => {
               }}
             >
               {isMessaging ? (
-                <>
-                  <Loader2 size={18} className="animate-spin" /> Starting conversation...
-                </>
+                <RaabtaLoader variant="button" />
               ) : isSelf ? (
                 <>
                   <User size={18} /> Back to My Chats

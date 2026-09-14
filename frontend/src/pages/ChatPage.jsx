@@ -9,6 +9,7 @@ import SettingsModal from '../components/settings/SettingsModal';
 import ReportModal from '../components/report/ReportModal';
 import CreateGroupModal from '../components/group/CreateGroupModal';
 import NotificationToast from '../components/chat/NotificationToast';
+import { RaabtaLoader } from '../components/common/RaabtaLoader';
 
 const ChatPage = () => {
   const { user, logout } = useAuth();
@@ -18,12 +19,25 @@ const ChatPage = () => {
   const [selectedConversation, setSelectedConversation] = useState(null);
   const [loadingConversations, setLoadingConversations] = useState(true);
 
+  // Theme State
+  const [theme, setTheme] = useState(() => localStorage.getItem('raabta_theme') || 'dark');
+
   // Settings & Report Modal States
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [isCreateGroupOpen, setIsCreateGroupOpen] = useState(false);
   const [reportTarget, setReportTarget] = useState(null); // { user, message }
 
   const [toasts, setToasts] = useState([]);
+
+  // Sync theme with DOM root
+  useEffect(() => {
+    document.documentElement.setAttribute('data-theme', theme);
+    localStorage.setItem('raabta_theme', theme);
+  }, [theme]);
+
+  const toggleTheme = () => {
+    setTheme((prev) => (prev === 'dark' ? 'light' : 'dark'));
+  };
 
   // Fetch initial user conversations
   useEffect(() => {
@@ -292,26 +306,26 @@ const ChatPage = () => {
           left: 0,
           right: 0,
           zIndex: 9999,
-          background: '#d97706',
+          background: 'linear-gradient(90deg, #d97706, #b45309)',
           color: '#ffffff',
           fontSize: '0.82rem',
           fontWeight: '600',
           textAlign: 'center',
-          padding: '4px 12px',
-          boxShadow: 'var(--shadow-sm)',
+          padding: '6px 12px',
+          boxShadow: 'var(--shadow-md)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           gap: '8px'
         }}>
-          <span className="animate-pulse" style={{ fontSize: '1rem' }}>●</span>
+          <span style={{ fontSize: '0.9rem', display: 'inline-flex' }}>●</span>
           Reconnecting to real-time chat service...
         </div>
       )}
 
       {/* Sidebar */}
       <div className={`sidebar-wrapper ${selectedConversation ? 'mobile-hidden' : 'mobile-visible'}`} style={{
-        width: '360px',
+        width: '380px',
         flexShrink: 0,
         height: '100%'
       }}>
@@ -325,6 +339,8 @@ const ChatPage = () => {
           onOpenProfile={() => setIsSettingsOpen(true)}
           onOpenCreateGroup={() => setIsCreateGroupOpen(true)}
           loadingConversations={loadingConversations}
+          theme={theme}
+          onToggleTheme={toggleTheme}
         />
       </div>
 

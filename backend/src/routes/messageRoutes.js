@@ -6,17 +6,19 @@ const {
   deleteMessage,
   reactMessage,
   uploadImage,
+  uploadAudio,
   getMessages,
   markMessagesSeen,
   searchMessages
 } = require('../controllers/messageController');
 const { protect } = require('../middleware/authMiddleware');
-const { upload } = require('../config/cloudinary');
+const { upload, uploadAudio: uploadAudioMulter } = require('../config/cloudinary');
 
 router.use(protect);
 
 router.post('/', sendMessage);
 router.post('/upload', upload.single('image'), uploadImage);
+router.post('/upload-audio', uploadAudioMulter.single('audio'), uploadAudio);
 router.post('/mark-seen', markMessagesSeen);
 router.get('/search', searchMessages);
 

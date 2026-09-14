@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image'],
+      enum: ['text', 'image', 'gif', 'sticker', 'audio'],
       default: 'text'
     },
     imageUrl: {
@@ -30,6 +30,14 @@ const messageSchema = new mongoose.Schema(
     imagePublicId: {
       type: String,
       default: null
+    },
+    audioUrl: {
+      type: String,
+      default: null
+    },
+    audioDuration: {
+      type: Number,
+      default: 0
     },
     replyTo: {
       type: mongoose.Schema.Types.ObjectId,

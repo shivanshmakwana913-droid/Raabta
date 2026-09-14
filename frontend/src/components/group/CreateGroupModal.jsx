@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Search, Users, UserPlus, AlertCircle, Check } from 'lucide-react';
 import api from '../../services/api';
+import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => {
   const [groupName, setGroupName] = useState('');
@@ -94,22 +95,19 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
   return (
     <div style={{
       position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
+      inset: 0,
+      background: 'rgba(11, 15, 25, 0.82)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
       zIndex: 1000
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel glass-modal-content animate-slide-up" style={{
         width: '100%',
         maxWidth: '500px',
-        borderRadius: '24px',
+        borderRadius: '28px',
         padding: '28px',
         boxShadow: 'var(--shadow-lg)',
         maxHeight: '90vh',
@@ -119,20 +117,14 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <Users size={24} color="var(--accent-primary)" />
-            <h3 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+            <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
               Create New Group
             </h3>
           </div>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '50%'
-            }}
+            aria-label="Close modal"
+            className="action-icon-btn"
           >
             <X size={20} />
           </button>
@@ -140,8 +132,8 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
 
         {/* Error Alert */}
         {errorMessage && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             padding: '10px 14px',
@@ -160,22 +152,22 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Group Name Input */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Group Name
             </label>
             <input
               type="text"
-              placeholder="e.g. Project Developers, Family Chat..."
+              placeholder="e.g. Project Team, Inner Circle..."
               value={groupName}
               onChange={(e) => setGroupName(e.target.value)}
               style={{
                 width: '100%',
                 padding: '12px 14px',
-                background: 'var(--bg-primary)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
                 borderRadius: '12px',
                 color: 'var(--text-primary)',
-                fontSize: '0.95rem',
+                fontSize: '0.92rem',
                 outline: 'none'
               }}
             />
@@ -184,13 +176,14 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
           {/* Selected Users Chips */}
           {selectedUsers.length > 0 && (
             <div>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Selected Members ({selectedUsers.length})
               </label>
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px' }}>
                 {selectedUsers.map((user) => (
                   <div
                     key={user._id}
+                    className="animate-scale-in"
                     style={{
                       display: 'inline-flex',
                       alignItems: 'center',
@@ -200,7 +193,8 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
                       padding: '6px 12px',
                       borderRadius: 'var(--radius-full)',
                       fontSize: '0.82rem',
-                      fontWeight: '500'
+                      fontWeight: '600',
+                      boxShadow: 'var(--shadow-sm)'
                     }}
                   >
                     <span>{user.name || user.username}</span>
@@ -217,7 +211,7 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
 
           {/* Search Users to Add */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Add Members
             </label>
             <div style={{ position: 'relative' }}>
@@ -230,7 +224,7 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
                 style={{
                   width: '100%',
                   padding: '10px 14px 10px 38px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
                   borderRadius: '12px',
                   color: 'var(--text-primary)',
@@ -244,8 +238,8 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
           {/* Search Results List */}
           <div style={{ maxHeight: '180px', overflowY: 'auto' }}>
             {isSearching ? (
-              <div style={{ padding: '12px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
-                Searching users...
+              <div style={{ padding: '12px', textAlign: 'center' }}>
+                <RaabtaLoader variant="inline" message="Searching users..." size="small" />
               </div>
             ) : searchResults.length > 0 ? (
               searchResults.map((user) => {
@@ -258,7 +252,7 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
                       display: 'flex',
                       alignItems: 'center',
                       gap: '12px',
-                      padding: '8px 12px',
+                      padding: '10px 12px',
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',
                       background: isSelected ? 'var(--bg-tertiary)' : 'transparent',
@@ -269,10 +263,10 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
                     <img
                       src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
                       alt={user.name}
-                      style={{ width: '34px', height: '34px', borderRadius: '50%', objectFit: 'cover' }}
+                      style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
                     />
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-primary)' }}>
                         {user.name}
                       </div>
                       <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
@@ -299,16 +293,8 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
             <button
               type="button"
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="btn-secondary"
+              style={{ flex: 1, padding: '12px' }}
             >
               Cancel
             </button>
@@ -318,7 +304,7 @@ const CreateGroupModal = ({ onClose, onGroupCreated, onSelectConversation }) => 
               className="btn-primary"
               style={{ flex: 1, padding: '12px' }}
             >
-              {isSubmitting ? 'Creating...' : 'Create Group'}
+              {isSubmitting ? <RaabtaLoader variant="button" /> : 'Create Group'}
             </button>
           </div>
         </form>

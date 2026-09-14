@@ -1,5 +1,5 @@
 import { formatConversationTime } from '../../utils/dateFormatter';
-import { Image as ImageIcon, Users } from 'lucide-react';
+import { Image as ImageIcon, Users, Mic } from 'lucide-react';
 
 const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) => {
   const isGroup = conversation.type === 'group';
@@ -34,6 +34,34 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
 
     const prefix = `${senderName}: `;
 
+    if (lastMessage.isDeleted) {
+      return <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>Message deleted</span>;
+    }
+
+    if (lastMessage.messageType === 'audio') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {prefix}<Mic size={13} style={{ verticalAlign: 'middle' }} /> <span style={{ fontWeight: '600' }}>Voice message</span>
+        </span>
+      );
+    }
+
+    if (lastMessage.messageType === 'gif') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {prefix}<span style={{ fontWeight: '700', fontSize: '0.75rem', background: 'var(--accent-glow)', color: 'var(--accent-primary)', padding: '1px 5px', borderRadius: '4px' }}>GIF</span> {lastMessage.content && lastMessage.content !== 'GIF' ? lastMessage.content : ''}
+        </span>
+      );
+    }
+
+    if (lastMessage.messageType === 'sticker') {
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {prefix}<span style={{ fontWeight: '700', fontSize: '0.75rem', color: '#ec4899' }}>[Sticker]</span> {lastMessage.content && lastMessage.content !== 'Sticker' ? lastMessage.content : ''}
+        </span>
+      );
+    }
+
     if (lastMessage.messageType === 'image' || lastMessage.imageUrl) {
       return (
         <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
@@ -52,15 +80,16 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
-        padding: '12px 16px',
+        padding: '12px 14px',
         borderRadius: 'var(--radius-md)',
         cursor: 'pointer',
         background: isSelected ? 'var(--bg-tertiary)' : 'transparent',
-        transition: 'background var(--transition-fast)',
+        transition: 'all var(--transition-fast)',
         borderBottom: '1px solid var(--border-color)',
-        position: 'relative'
+        position: 'relative',
+        marginBottom: '2px'
       }}
-      className="conversation-item"
+      className={`conversation-item ${isSelected ? 'active' : ''}`}
     >
       {/* Avatar Container */}
       <div style={{ position: 'relative', flexShrink: 0 }}>
@@ -80,13 +109,14 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
           <span
             style={{
               position: 'absolute',
-              bottom: '2px',
-              right: '2px',
-              width: '12px',
-              height: '12px',
+              bottom: '1px',
+              right: '1px',
+              width: '13px',
+              height: '13px',
               borderRadius: '50%',
               backgroundColor: isOnline ? 'var(--status-online)' : 'var(--status-offline)',
-              border: '2px solid var(--bg-secondary)'
+              border: '2.5px solid var(--bg-secondary)',
+              boxShadow: isOnline ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none'
             }}
           />
         )}
@@ -94,21 +124,20 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
           <span
             style={{
               position: 'absolute',
-              bottom: '2px',
-              right: '2px',
-              width: '14px',
-              height: '14px',
+              bottom: '1px',
+              right: '1px',
+              width: '15px',
+              height: '15px',
               borderRadius: '50%',
               backgroundColor: 'var(--accent-primary)',
               border: '2px solid var(--bg-secondary)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#fff',
-              fontSize: '8px'
+              color: '#fff'
             }}
           >
-            <Users size={8} />
+            <Users size={9} />
           </span>
         )}
       </div>
@@ -117,8 +146,8 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '4px' }}>
           <h4 style={{
-            fontSize: '0.95rem',
-            fontWeight: '600',
+            fontSize: '0.94rem',
+            fontWeight: unreadCount > 0 ? '800' : '600',
             color: 'var(--text-primary)',
             overflow: 'hidden',
             textOverflow: 'ellipsis',
@@ -126,14 +155,14 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
           }}>
             {displayName}
           </h4>
-          <span style={{ fontSize: '0.75rem', color: unreadCount > 0 ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: unreadCount > 0 ? '600' : '400', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', color: unreadCount > 0 ? 'var(--accent-primary)' : 'var(--text-muted)', fontWeight: unreadCount > 0 ? '700' : '500', flexShrink: 0 }}>
             {formatConversationTime(conversation.updatedAt)}
           </span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <div style={{
-            fontSize: '0.85rem',
+            fontSize: '0.84rem',
             color: unreadCount > 0 ? 'var(--text-primary)' : isSelected ? 'var(--text-secondary)' : 'var(--text-muted)',
             fontWeight: unreadCount > 0 ? '600' : '400',
             overflow: 'hidden',
@@ -151,11 +180,11 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
               background: 'var(--accent-gradient)',
               color: '#ffffff',
               fontSize: '0.72rem',
-              fontWeight: '700',
-              padding: '2px 8px',
+              fontWeight: '800',
+              padding: '3px 9px',
               borderRadius: 'var(--radius-full)',
               flexShrink: 0,
-              boxShadow: '0 2px 6px var(--accent-glow)'
+              boxShadow: '0 2px 8px var(--accent-glow)'
             }}>
               {unreadCount > 99 ? '99+' : unreadCount}
             </span>

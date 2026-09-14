@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Users, UserPlus, UserMinus, Edit2, Check, Shield, AlertCircle, Search } from 'lucide-react';
 import api from '../../services/api';
+import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) => {
   const [groupName, setGroupName] = useState(conversation.groupName || '');
@@ -126,22 +127,19 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
   return (
     <div style={{
       position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
+      inset: 0,
+      background: 'rgba(11, 15, 25, 0.82)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
       zIndex: 1000
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel glass-modal-content animate-slide-up" style={{
         width: '100%',
         maxWidth: '480px',
-        borderRadius: '24px',
+        borderRadius: '28px',
         padding: '28px',
         boxShadow: 'var(--shadow-lg)',
         maxHeight: '90vh',
@@ -149,19 +147,13 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
             Group Details
           </h3>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '50%'
-            }}
+            aria-label="Close modal"
+            className="action-icon-btn"
           >
             <X size={20} />
           </button>
@@ -169,8 +161,8 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
 
         {/* Feedback Alerts */}
         {errorMessage && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             padding: '10px 14px',
@@ -187,10 +179,10 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
         )}
 
         {successMessage && (
-          <div style={{
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#4ade80',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#34d399',
             padding: '10px 14px',
             borderRadius: '12px',
             marginBottom: '16px',
@@ -211,6 +203,7 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
               borderRadius: '50%',
               objectFit: 'cover',
               border: '3px solid var(--accent-primary)',
+              boxShadow: '0 4px 16px var(--accent-glow)',
               marginBottom: '12px'
             }}
           />
@@ -224,9 +217,9 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                 style={{
                   flex: 1,
                   padding: '8px 12px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '8px',
+                  borderRadius: '10px',
                   color: 'var(--text-primary)',
                   fontSize: '0.95rem'
                 }}
@@ -235,14 +228,14 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                 onClick={handleRenameGroup}
                 disabled={isSubmitting}
                 className="btn-primary"
-                style={{ padding: '8px 12px', borderRadius: '8px' }}
+                style={{ padding: '8px 12px', borderRadius: '10px' }}
               >
-                <Check size={16} />
+                {isSubmitting ? <RaabtaLoader variant="button" /> : <Check size={16} />}
               </button>
             </div>
           ) : (
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h4 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+              <h4 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
                 {conversation.groupName}
               </h4>
               {isAdmin && (
@@ -263,7 +256,7 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
         {/* Add Members Section (Admin Only) */}
         {isAdmin && (
           <div style={{ marginBottom: '24px' }}>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>
               Add Members to Group
             </label>
             <div style={{ position: 'relative' }}>
@@ -276,9 +269,9 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                 style={{
                   width: '100%',
                   padding: '10px 14px 10px 36px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   color: 'var(--text-primary)',
                   fontSize: '0.88rem',
                   outline: 'none'
@@ -288,9 +281,11 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
 
             {/* Search results dropdown */}
             {searchQuery.trim() && (
-              <div style={{ maxHeight: '140px', overflowY: 'auto', marginTop: '8px', background: 'var(--bg-primary)', borderRadius: '10px', border: '1px solid var(--border-color)', padding: '6px' }}>
+              <div style={{ maxHeight: '140px', overflowY: 'auto', marginTop: '8px', background: 'var(--bg-input)', borderRadius: '12px', border: '1px solid var(--border-color)', padding: '6px' }}>
                 {isSearching ? (
-                  <div style={{ padding: '8px', textAlign: 'center', fontSize: '0.8rem', color: 'var(--text-secondary)' }}>Searching...</div>
+                  <div style={{ padding: '8px', textAlign: 'center' }}>
+                    <RaabtaLoader variant="inline" message="Searching..." size="small" />
+                  </div>
                 ) : searchResults.length > 0 ? (
                   searchResults.map((user) => (
                     <div
@@ -300,14 +295,14 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
-                        padding: '8px',
-                        borderRadius: '6px',
+                        padding: '8px 10px',
+                        borderRadius: '8px',
                         cursor: 'pointer',
-                        transition: 'background 0.15s'
+                        transition: 'background var(--transition-fast)'
                       }}
                       className="search-result-item"
                     >
-                      <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)' }}>{user.name} (@{user.username})</span>
+                      <span style={{ fontSize: '0.88rem', color: 'var(--text-primary)', fontWeight: '600' }}>{user.name} (@{user.username})</span>
                       <UserPlus size={16} color="var(--accent-primary)" />
                     </div>
                   ))
@@ -321,7 +316,7 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
 
         {/* Group Participants List */}
         <div>
-          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px' }}>
+          <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', marginBottom: '8px', letterSpacing: '0.05em' }}>
             Group Members ({conversation.participants.length})
           </label>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '220px', overflowY: 'auto' }}>
@@ -334,9 +329,9 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '8px 12px',
+                    padding: '10px 14px',
                     borderRadius: 'var(--radius-md)',
-                    background: 'var(--bg-primary)',
+                    background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)'
                   }}
                 >
@@ -347,10 +342,10 @@ const GroupInfoModal = ({ conversation, currentUser, onClose, onGroupUpdated }) 
                       style={{ width: '36px', height: '36px', borderRadius: '50%', objectFit: 'cover' }}
                     />
                     <div>
-                      <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <span>{member.name}</span>
                         {isMemberAdmin && (
-                          <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '2px', background: 'rgba(99, 102, 241, 0.15)', padding: '2px 6px', borderRadius: '4px' }}>
+                          <span style={{ fontSize: '0.7rem', color: 'var(--accent-primary)', display: 'inline-flex', alignItems: 'center', gap: '3px', background: 'rgba(99, 102, 241, 0.15)', padding: '2px 7px', borderRadius: '6px', fontWeight: '700' }}>
                             <Shield size={10} /> Admin
                           </span>
                         )}

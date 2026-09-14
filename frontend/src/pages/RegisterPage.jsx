@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Lock, User, Mail, AlertCircle, ArrowRight, Smile, Loader2, AtSign, Phone, KeyRound, CheckCircle2 } from 'lucide-react';
+import { MessageSquare, Lock, Mail, AlertCircle, ArrowRight, Smile, AtSign, Phone, KeyRound, ShieldCheck } from 'lucide-react';
 import api from '../services/api';
+import { RaabtaLoader } from '../components/common/RaabtaLoader';
 
 const RegisterPage = () => {
   const [name, setName] = useState('');
@@ -14,7 +15,6 @@ const RegisterPage = () => {
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otpCode, setOtpCode] = useState('');
   const [otpSent, setOtpSent] = useState(false);
-  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
   const [devOtpHint, setDevOtpHint] = useState(null);
   const [otpLoading, setOtpLoading] = useState(false);
   const [phoneMessage, setPhoneMessage] = useState('');
@@ -146,44 +146,61 @@ const RegisterPage = () => {
       alignItems: 'center',
       justifyContent: 'center',
       minHeight: '100vh',
-      padding: '20px',
-      background: 'radial-gradient(circle at top right, #1e1b4b 0%, #0f172a 100%)'
+      padding: '24px 16px',
+      background: 'radial-gradient(circle at top right, #1e1b4b 0%, #0b0f19 70%)',
+      position: 'relative',
+      overflow: 'hidden'
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      {/* Background Ambient Glow Orbs */}
+      <div style={{
+        position: 'absolute', top: '-120px', right: '-120px',
+        width: '340px', height: '340px', borderRadius: '50%',
+        background: 'rgba(168, 85, 247, 0.15)', filter: 'blur(80px)', pointerEvents: 'none'
+      }} />
+      <div style={{
+        position: 'absolute', bottom: '-120px', left: '-120px',
+        width: '320px', height: '320px', borderRadius: '50%',
+        background: 'rgba(99, 102, 241, 0.15)', filter: 'blur(80px)', pointerEvents: 'none'
+      }} />
+
+      <div className="glass-panel animate-slide-up auth-card" style={{
         width: '100%',
         maxWidth: '460px',
         padding: '36px',
-        borderRadius: '24px',
-        boxShadow: 'var(--shadow-lg)'
+        borderRadius: '28px',
+        boxShadow: 'var(--shadow-lg)',
+        position: 'relative',
+        zIndex: 1
       }}>
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '24px' }}>
           <div style={{
             display: 'inline-flex',
-            padding: '14px',
-            borderRadius: '20px',
+            padding: '16px',
+            borderRadius: '22px',
             background: 'var(--accent-gradient)',
             boxShadow: '0 8px 24px var(--accent-glow)',
-            marginBottom: '14px'
+            marginBottom: '14px',
+            transform: 'rotate(2deg)'
           }}>
             <MessageSquare size={32} color="#fff" />
           </div>
-          <h2 style={{ fontSize: '1.7rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.02em' }}>
+          <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.03em' }}>
             Join Raabta
           </h2>
-          <p style={{ color: 'var(--accent-primary)', fontSize: '0.9rem', fontWeight: '500' }}>
-            Jahan baatein judti hain.
+          <p style={{ color: 'var(--accent-primary)', fontSize: '0.88rem', fontWeight: '600', letterSpacing: '0.01em' }}>
+            Jahan baatein judti hain
           </p>
         </div>
 
         {/* Error Alert */}
         {errorMessage && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             padding: '12px 16px',
-            borderRadius: '12px',
+            borderRadius: '14px',
             marginBottom: '20px',
             display: 'flex',
             alignItems: 'center',
@@ -198,7 +215,7 @@ const RegisterPage = () => {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Full Name *
             </label>
             <div style={{ position: 'relative' }}>
@@ -211,11 +228,11 @@ const RegisterPage = () => {
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   outline: 'none'
                 }}
               />
@@ -224,26 +241,24 @@ const RegisterPage = () => {
 
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
                 Username (@) *
               </label>
               {username.trim() && (
                 <span style={{
-                  fontSize: '0.75rem',
+                  fontSize: '0.78rem',
                   fontWeight: '600',
                   color: isCheckingUsername
                     ? 'var(--text-muted)'
                     : usernameStatus === 'available'
-                    ? '#4ade80'
-                    : '#f87171',
+                    ? '#10b981'
+                    : '#ef4444',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '4px'
                 }}>
                   {isCheckingUsername ? (
-                    <>
-                      <Loader2 size={12} className="animate-spin" /> Checking...
-                    </>
+                    <RaabtaLoader variant="button" />
                   ) : usernameStatus === 'available' ? (
                     <>✓ {usernameMessage}</>
                   ) : (
@@ -262,19 +277,19 @@ const RegisterPage = () => {
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: `1px solid ${
                     !username.trim()
                       ? 'var(--border-color)'
                       : isCheckingUsername
                       ? 'var(--border-color)'
                       : usernameStatus === 'available'
-                      ? 'rgba(74, 222, 128, 0.5)'
-                      : 'rgba(248, 113, 113, 0.5)'
+                      ? 'rgba(16, 185, 129, 0.5)'
+                      : 'rgba(239, 68, 68, 0.5)'
                   }`,
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   outline: 'none'
                 }}
               />
@@ -282,7 +297,7 @@ const RegisterPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Email Address *
             </label>
             <div style={{ position: 'relative' }}>
@@ -295,11 +310,11 @@ const RegisterPage = () => {
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   outline: 'none'
                 }}
               />
@@ -307,7 +322,7 @@ const RegisterPage = () => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.85rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Password *
             </label>
             <div style={{ position: 'relative' }}>
@@ -320,11 +335,11 @@ const RegisterPage = () => {
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '12px',
+                  borderRadius: '14px',
                   color: 'var(--text-primary)',
-                  fontSize: '0.95rem',
+                  fontSize: '0.92rem',
                   outline: 'none'
                 }}
               />
@@ -333,14 +348,14 @@ const RegisterPage = () => {
 
           {/* Optional Phone Number Section */}
           <div style={{
-            background: 'rgba(255, 255, 255, 0.03)',
+            background: 'var(--bg-input)',
             padding: '14px',
-            borderRadius: '14px',
+            borderRadius: '16px',
             border: '1px solid var(--border-color)',
             marginTop: '4px'
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <label style={{ fontSize: '0.85rem', fontWeight: '600', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
                 <Phone size={16} color="var(--accent-primary)" /> Phone Number (Optional)
               </label>
               <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Private</span>
@@ -360,9 +375,9 @@ const RegisterPage = () => {
                   padding: '10px 12px',
                   background: 'var(--bg-primary)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   color: 'var(--text-primary)',
-                  fontSize: '0.9rem',
+                  fontSize: '0.88rem',
                   outline: 'none'
                 }}
               />
@@ -376,17 +391,21 @@ const RegisterPage = () => {
                     onClick={handleSendPhoneOtp}
                     disabled={otpLoading}
                     style={{
-                      padding: '8px 12px',
-                      borderRadius: '8px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
                       border: '1px solid var(--accent-primary)',
                       background: 'rgba(99, 102, 241, 0.1)',
                       color: 'var(--accent-primary)',
                       fontWeight: '600',
                       fontSize: '0.82rem',
-                      cursor: 'pointer'
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '6px'
                     }}
                   >
-                    {otpLoading ? 'Sending OTP...' : 'Send Verification OTP'}
+                    {otpLoading ? <RaabtaLoader variant="button" /> : 'Send Verification OTP'}
                   </button>
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -403,16 +422,17 @@ const RegisterPage = () => {
                           padding: '8px 10px 8px 34px',
                           background: 'var(--bg-primary)',
                           border: '1px solid var(--border-color)',
-                          borderRadius: '8px',
+                          borderRadius: '10px',
                           color: 'var(--text-primary)',
                           fontSize: '0.88rem',
-                          letterSpacing: '2px'
+                          letterSpacing: '2px',
+                          fontWeight: '600'
                         }}
                       />
                     </div>
                     {devOtpHint && (
-                      <span style={{ fontSize: '0.75rem', color: '#60a5fa' }}>
-                        Dev Code: {devOtpHint}
+                      <span style={{ fontSize: '0.75rem', color: '#818cf8', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <ShieldCheck size={14} /> Dev Code: {devOtpHint}
                       </span>
                     )}
                   </div>
@@ -428,12 +448,13 @@ const RegisterPage = () => {
             style={{
               width: '100%',
               padding: '14px',
-              marginTop: '8px',
+              borderRadius: '14px',
+              marginTop: '6px',
               opacity: isSubmitDisabled ? 0.6 : 1,
               cursor: isSubmitDisabled ? 'not-allowed' : 'pointer'
             }}
           >
-            {isSubmitting ? 'Creating account...' : (
+            {isSubmitting ? <RaabtaLoader variant="button" /> : (
               <>
                 Create Account <ArrowRight size={18} />
               </>
@@ -442,9 +463,9 @@ const RegisterPage = () => {
         </form>
 
         {/* Footer */}
-        <div style={{ marginTop: '24px', textAlign: 'center', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+        <div style={{ marginTop: '28px', textAlign: 'center', fontSize: '0.88rem', color: 'var(--text-secondary)' }}>
           Already have an account?{' '}
-          <Link to="/login" style={{ color: 'var(--accent-primary)', fontWeight: '600', textDecoration: 'none' }}>
+          <Link to="/login" style={{ color: 'var(--accent-primary)', fontWeight: '700', textDecoration: 'none' }}>
             Sign In
           </Link>
         </div>

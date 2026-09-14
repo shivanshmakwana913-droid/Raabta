@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
 import {
   X, User, Lock, Shield, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2,
-  Eye, LogOut, UserX, Loader2, AtSign, Smile, Image, Mail, Phone, KeyRound, Check
+  Eye, LogOut, UserX, AtSign, Smile, Mail, Phone, KeyRound, Check
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const SettingsModal = ({ onClose }) => {
   const { user, setUser, logout } = useAuth();
@@ -358,20 +359,20 @@ const SettingsModal = ({ onClose }) => {
   return (
     <div style={{
       position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(15, 23, 42, 0.8)',
-      backdropFilter: 'blur(8px)',
+      inset: 0,
+      background: 'rgba(11, 15, 25, 0.82)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
       zIndex: 1000
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel glass-modal-content animate-slide-up" style={{
         width: '100%',
         maxWidth: '680px',
         maxHeight: '90vh',
-        borderRadius: '24px',
+        borderRadius: '28px',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -384,21 +385,15 @@ const SettingsModal = ({ onClose }) => {
           alignItems: 'center',
           justifyContent: 'space-between',
           borderBottom: '1px solid var(--border-color)',
-          background: 'var(--bg-primary)'
+          background: 'var(--bg-secondary)'
         }}>
-          <h3 style={{ fontSize: '1.25rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+          <h3 style={{ fontSize: '1.25rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
             Settings & Safety
           </h3>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '50%'
-            }}
+            aria-label="Close modal"
+            className="action-icon-btn"
           >
             <X size={20} />
           </button>
@@ -407,7 +402,7 @@ const SettingsModal = ({ onClose }) => {
         {/* Tab Navigation */}
         <div style={{
           display: 'flex',
-          background: 'var(--bg-tertiary)',
+          background: 'var(--bg-primary)',
           borderBottom: '1px solid var(--border-color)',
           padding: '0 16px',
           overflowX: 'auto'
@@ -432,15 +427,16 @@ const SettingsModal = ({ onClose }) => {
                     ? tab.danger ? '#f87171' : 'var(--accent-primary)'
                     : 'var(--text-secondary)',
                   borderBottom: isActive
-                    ? `2px solid ${tab.danger ? '#f87171' : 'var(--accent-primary)'}`
-                    : '2px solid transparent',
-                  fontWeight: isActive ? '600' : '500',
+                    ? `2.5px solid ${tab.danger ? '#f87171' : 'var(--accent-primary)'}`
+                    : '2.5px solid transparent',
+                  fontWeight: isActive ? '700' : '500',
                   fontSize: '0.88rem',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '8px',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  transition: 'all var(--transition-fast)'
                 }}
               >
                 <Icon size={16} />
@@ -452,14 +448,14 @@ const SettingsModal = ({ onClose }) => {
 
         {/* Feedback Alert Bar */}
         {(errorMsg || successMsg) && (
-          <div style={{ padding: '12px 24px 0 24px' }}>
+          <div style={{ padding: '14px 24px 0 24px' }}>
             {errorMsg && (
-              <div style={{
-                background: 'rgba(239, 68, 68, 0.15)',
+              <div className="animate-fade-in" style={{
+                background: 'rgba(239, 68, 68, 0.12)',
                 border: '1px solid rgba(239, 68, 68, 0.3)',
                 color: '#f87171',
                 padding: '10px 14px',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
@@ -470,12 +466,12 @@ const SettingsModal = ({ onClose }) => {
               </div>
             )}
             {successMsg && (
-              <div style={{
-                background: 'rgba(34, 197, 94, 0.15)',
-                border: '1px solid rgba(34, 197, 94, 0.3)',
-                color: '#4ade80',
+              <div className="animate-fade-in" style={{
+                background: 'rgba(16, 185, 129, 0.12)',
+                border: '1px solid rgba(16, 185, 129, 0.3)',
+                color: '#34d399',
                 padding: '10px 14px',
-                borderRadius: '12px',
+                borderRadius: '14px',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '10px',
@@ -501,8 +497,8 @@ const SettingsModal = ({ onClose }) => {
                       src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                       alt="Avatar"
                       style={{
-                        width: '84px',
-                        height: '84px',
+                        width: '88px',
+                        height: '88px',
                         borderRadius: '50%',
                         objectFit: 'cover',
                         border: '3px solid var(--accent-primary)',
@@ -516,9 +512,9 @@ const SettingsModal = ({ onClose }) => {
                       style={{
                         position: 'absolute', bottom: 0, right: 0,
                         background: 'var(--accent-gradient)', border: 'none',
-                        color: '#fff', width: '28px', height: '28px',
+                        color: '#fff', width: '30px', height: '30px',
                         borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
-                        cursor: 'pointer'
+                        cursor: 'pointer', boxShadow: 'var(--shadow-sm)'
                       }}
                     >
                       <RefreshCw size={14} />
@@ -527,7 +523,7 @@ const SettingsModal = ({ onClose }) => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Full Name
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -536,19 +532,19 @@ const SettingsModal = ({ onClose }) => {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <label style={{ fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                    <label style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
                       Username (@)
                     </label>
                     <span style={{
-                      fontSize: '0.75rem', fontWeight: '600',
-                      color: isCheckingUsername ? 'var(--text-muted)' : usernameStatus === 'available' ? '#4ade80' : '#f87171'
+                      fontSize: '0.78rem', fontWeight: '600',
+                      color: isCheckingUsername ? 'var(--text-muted)' : usernameStatus === 'available' ? '#10b981' : '#ef4444'
                     }}>
                       {isCheckingUsername ? 'Checking...' : usernameStatus === 'available' ? `✓ ${usernameMessage}` : `✗ ${usernameMessage}`}
                     </span>
@@ -559,13 +555,13 @@ const SettingsModal = ({ onClose }) => {
                       type="text"
                       value={username}
                       onChange={(e) => setUsername(e.target.value)}
-                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Email Address (Read-Only)
                   </label>
                   <div style={{ position: 'relative' }}>
@@ -575,13 +571,13 @@ const SettingsModal = ({ onClose }) => {
                       value={user?.email || ''}
                       readOnly
                       disabled
-                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-muted)', cursor: 'not-allowed' }}
+                      style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-muted)', cursor: 'not-allowed' }}
                     />
                   </div>
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Bio ({bio.length}/200)
                   </label>
                   <textarea
@@ -589,7 +585,7 @@ const SettingsModal = ({ onClose }) => {
                     onChange={(e) => setBio(e.target.value.slice(0, 200))}
                     rows={2}
                     placeholder="Tell others about yourself..."
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none', resize: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none', resize: 'none' }}
                   />
                 </div>
 
@@ -597,9 +593,9 @@ const SettingsModal = ({ onClose }) => {
                   type="submit"
                   className="btn-primary"
                   disabled={accountSubmitting || isCheckingUsername || usernameStatus === 'invalid' || usernameStatus === 'unavailable'}
-                  style={{ padding: '12px', marginTop: '4px' }}
+                  style={{ padding: '12px', marginTop: '4px', borderRadius: '12px' }}
                 >
-                  {accountSubmitting ? 'Saving...' : <><Save size={16} /> Save Profile Changes</>}
+                  {accountSubmitting ? <RaabtaLoader variant="button" /> : <><Save size={16} /> Save Profile Changes</>}
                 </button>
               </form>
 
@@ -609,13 +605,13 @@ const SettingsModal = ({ onClose }) => {
                 paddingTop: '20px',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px'
+                gap: '14px'
               }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <h4 style={{ fontSize: '0.98rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h4 style={{ fontSize: '0.98rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
                     <Phone size={18} color="var(--accent-primary)" /> Phone Identity & OTP Verification
                   </h4>
-                  <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '10px', background: 'rgba(255, 255, 255, 0.05)', color: 'var(--text-muted)' }}>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 9px', borderRadius: '12px', background: 'var(--bg-input)', color: 'var(--text-muted)', border: '1px solid var(--border-color)' }}>
                     Private
                   </span>
                 </div>
@@ -623,23 +619,23 @@ const SettingsModal = ({ onClose }) => {
                 {/* Display Current Phone Status */}
                 {phoneInfo.phoneNumber && !editingPhone ? (
                   <div style={{
-                    padding: '14px',
-                    borderRadius: '12px',
-                    background: 'var(--bg-primary)',
+                    padding: '16px',
+                    borderRadius: '14px',
+                    background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between'
                   }}>
                     <div>
-                      <div style={{ fontSize: '0.92rem', fontWeight: '600', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <div style={{ fontSize: '0.94rem', fontWeight: '700', color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                         {phoneInfo.phoneNumber}
                         {phoneInfo.phoneNumberVerified ? (
-                          <span style={{ fontSize: '0.75rem', color: '#4ade80', background: 'rgba(74, 222, 128, 0.15)', padding: '2px 8px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#34d399', background: 'rgba(16, 185, 129, 0.12)', padding: '2px 8px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '4px', fontWeight: '600' }}>
                             <Check size={12} /> Verified
                           </span>
                         ) : (
-                          <span style={{ fontSize: '0.75rem', color: '#f87171', background: 'rgba(248, 113, 113, 0.15)', padding: '2px 8px', borderRadius: '12px' }}>
+                          <span style={{ fontSize: '0.75rem', color: '#f87171', background: 'rgba(239, 68, 68, 0.12)', padding: '2px 8px', borderRadius: '12px', fontWeight: '600' }}>
                             Unverified
                           </span>
                         )}
@@ -658,7 +654,8 @@ const SettingsModal = ({ onClose }) => {
                           setEditingPhone(true);
                           setPhoneStep(0);
                         }}
-                        style={{ padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)', fontSize: '0.8rem', cursor: 'pointer' }}
+                        className="btn-secondary"
+                        style={{ padding: '6px 12px', fontSize: '0.8rem' }}
                       >
                         Change
                       </button>
@@ -666,7 +663,7 @@ const SettingsModal = ({ onClose }) => {
                         type="button"
                         onClick={handleRemovePhone}
                         disabled={phoneSubmitting}
-                        style={{ padding: '6px 12px', borderRadius: '8px', background: 'rgba(239, 68, 68, 0.15)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.8rem', cursor: 'pointer' }}
+                        style={{ padding: '6px 12px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)', color: '#f87171', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
                       >
                         Remove
                       </button>
@@ -683,7 +680,7 @@ const SettingsModal = ({ onClose }) => {
                             placeholder="+1234567890"
                             value={inputPhone}
                             onChange={(e) => setInputPhone(e.target.value)}
-                            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                            style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                           />
                         </div>
                         <button
@@ -691,15 +688,16 @@ const SettingsModal = ({ onClose }) => {
                           onClick={handleSendPhoneOtp}
                           disabled={phoneSubmitting}
                           className="btn-primary"
-                          style={{ padding: '10px 16px', fontSize: '0.85rem', whiteSpace: 'nowrap' }}
+                          style={{ padding: '10px 16px', fontSize: '0.85rem', whiteSpace: 'nowrap', borderRadius: '12px' }}
                         >
-                          {phoneSubmitting ? 'Sending...' : 'Send OTP'}
+                          {phoneSubmitting ? <RaabtaLoader variant="button" /> : 'Send OTP'}
                         </button>
                         {editingPhone && (
                           <button
                             type="button"
                             onClick={() => setEditingPhone(false)}
-                            style={{ padding: '10px 14px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', color: 'var(--text-secondary)', fontSize: '0.85rem', cursor: 'pointer' }}
+                            className="btn-secondary"
+                            style={{ padding: '10px 14px', fontSize: '0.85rem' }}
                           >
                             Cancel
                           </button>
@@ -711,7 +709,7 @@ const SettingsModal = ({ onClose }) => {
                           Enter 6-digit verification code sent to <strong>{inputPhone}</strong>
                         </div>
                         {phoneDevOtp && (
-                          <div style={{ fontSize: '0.78rem', color: '#60a5fa' }}>
+                          <div style={{ fontSize: '0.78rem', color: '#818cf8' }}>
                             Dev Code: {phoneDevOtp}
                           </div>
                         )}
@@ -724,7 +722,7 @@ const SettingsModal = ({ onClose }) => {
                               placeholder="123456"
                               value={phoneOtp}
                               onChange={(e) => setPhoneOtp(e.target.value.replace(/\D/g, ''))}
-                              style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none', letterSpacing: '4px', fontWeight: '700' }}
+                              style={{ width: '100%', padding: '10px 12px 10px 36px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none', letterSpacing: '4px', fontWeight: '700' }}
                             />
                           </div>
                           <button
@@ -732,9 +730,9 @@ const SettingsModal = ({ onClose }) => {
                             onClick={handleVerifyPhoneOtp}
                             disabled={phoneSubmitting || phoneOtp.length !== 6}
                             className="btn-primary"
-                            style={{ padding: '10px 16px', fontSize: '0.85rem' }}
+                            style={{ padding: '10px 16px', fontSize: '0.85rem', borderRadius: '12px' }}
                           >
-                            {phoneSubmitting ? 'Verifying...' : 'Verify'}
+                            {phoneSubmitting ? <RaabtaLoader variant="button" /> : 'Verify'}
                           </button>
                         </div>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -742,7 +740,7 @@ const SettingsModal = ({ onClose }) => {
                             type="button"
                             onClick={handleSendPhoneOtp}
                             disabled={phoneCountdown > 0 || phoneSubmitting}
-                            style={{ background: 'none', border: 'none', color: phoneCountdown > 0 ? 'var(--text-muted)' : 'var(--accent-primary)', fontSize: '0.8rem', cursor: phoneCountdown > 0 ? 'not-allowed' : 'pointer' }}
+                            style={{ background: 'none', border: 'none', color: phoneCountdown > 0 ? 'var(--text-muted)' : 'var(--accent-primary)', fontSize: '0.8rem', cursor: phoneCountdown > 0 ? 'not-allowed' : 'pointer', fontWeight: '600' }}
                           >
                             {phoneCountdown > 0 ? `Resend code in ${phoneCountdown}s` : 'Resend Code'}
                           </button>
@@ -766,12 +764,12 @@ const SettingsModal = ({ onClose }) => {
           {activeTab === 'security' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <form onSubmit={handleChangePassword} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   Change Password
                 </h4>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Current Password
                   </label>
                   <input
@@ -779,12 +777,12 @@ const SettingsModal = ({ onClose }) => {
                     value={currentPassword}
                     onChange={(e) => setCurrentPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     New Password (min 6 chars)
                   </label>
                   <input
@@ -792,12 +790,12 @@ const SettingsModal = ({ onClose }) => {
                     value={newPassword}
                     onChange={(e) => setNewPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   />
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Confirm New Password
                   </label>
                   <input
@@ -805,7 +803,7 @@ const SettingsModal = ({ onClose }) => {
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.target.value)}
                     placeholder="••••••••"
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   />
                 </div>
 
@@ -813,14 +811,14 @@ const SettingsModal = ({ onClose }) => {
                   type="submit"
                   className="btn-primary"
                   disabled={securitySubmitting}
-                  style={{ padding: '12px' }}
+                  style={{ padding: '12px', borderRadius: '12px' }}
                 >
-                  {securitySubmitting ? 'Updating...' : <><Shield size={16} /> Update Password</>}
+                  {securitySubmitting ? <RaabtaLoader variant="button" /> : <><Shield size={16} /> Update Password</>}
                 </button>
               </form>
 
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
                   Session Control
                 </h4>
                 <button
@@ -829,11 +827,11 @@ const SettingsModal = ({ onClose }) => {
                   style={{
                     width: '100%',
                     padding: '12px',
-                    background: 'rgba(239, 68, 68, 0.15)',
+                    background: 'rgba(239, 68, 68, 0.12)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     color: '#f87171',
-                    borderRadius: '12px',
-                    fontWeight: '600',
+                    borderRadius: '14px',
+                    fontWeight: '700',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -851,18 +849,18 @@ const SettingsModal = ({ onClose }) => {
           {activeTab === 'privacy' && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
               <form onSubmit={handleSavePrivacy} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0 }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
                   Privacy Preferences
                 </h4>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Who can see your Last Seen timestamp?
                   </label>
                   <select
                     value={lastSeenPrivacy}
                     onChange={(e) => setLastSeenPrivacy(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   >
                     <option value="everyone">Everyone</option>
                     <option value="nobody">Nobody</option>
@@ -870,13 +868,13 @@ const SettingsModal = ({ onClose }) => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Who can see your Online status badge?
                   </label>
                   <select
                     value={onlineStatusPrivacy}
                     onChange={(e) => setOnlineStatusPrivacy(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   >
                     <option value="everyone">Everyone</option>
                     <option value="nobody">Nobody</option>
@@ -884,13 +882,13 @@ const SettingsModal = ({ onClose }) => {
                 </div>
 
                 <div>
-                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                  <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                     Public Profile Details Visibility
                   </label>
                   <select
                     value={profilePrivacy}
                     onChange={(e) => setProfilePrivacy(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                    style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                   >
                     <option value="everyone">Everyone (Public Route)</option>
                     <option value="users">Registered Users Only</option>
@@ -901,15 +899,15 @@ const SettingsModal = ({ onClose }) => {
                   type="submit"
                   className="btn-primary"
                   disabled={privacySubmitting}
-                  style={{ padding: '12px' }}
+                  style={{ padding: '12px', borderRadius: '12px' }}
                 >
-                  {privacySubmitting ? 'Updating...' : <><Save size={16} /> Save Privacy Settings</>}
+                  {privacySubmitting ? <RaabtaLoader variant="button" /> : <><Save size={16} /> Save Privacy Settings</>}
                 </button>
               </form>
 
               {/* Blocked Users Section */}
               <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '20px' }}>
-                <h4 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', marginBottom: '12px' }}>
+                <h4 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', marginBottom: '12px' }}>
                   Blocked Accounts ({blockedUsersList.length})
                 </h4>
 
@@ -922,29 +920,27 @@ const SettingsModal = ({ onClose }) => {
                         key={bu._id}
                         style={{
                           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                          padding: '10px 14px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)',
-                          borderRadius: '12px'
+                          padding: '12px 14px', background: 'var(--bg-input)', border: '1px solid var(--border-color)',
+                          borderRadius: '14px'
                         }}
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <img
                             src={bu.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${bu.username}`}
                             alt={bu.name}
-                            style={{ width: '32px', height: '32px', borderRadius: '50%' }}
+                            style={{ width: '36px', height: '36px', borderRadius: '50%' }}
                           />
                           <div>
-                            <div style={{ fontSize: '0.88rem', fontWeight: '600', color: 'var(--text-primary)' }}>{bu.name}</div>
-                            <div style={{ fontSize: '0.75rem', color: 'var(--accent-primary)' }}>@{bu.username}</div>
+                            <div style={{ fontSize: '0.88rem', fontWeight: '700', color: 'var(--text-primary)' }}>{bu.name}</div>
+                            <div style={{ fontSize: '0.78rem', color: 'var(--accent-primary)' }}>@{bu.username}</div>
                           </div>
                         </div>
 
                         <button
                           type="button"
                           onClick={() => handleUnblockUser(bu._id)}
-                          style={{
-                            padding: '6px 12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)',
-                            color: 'var(--text-primary)', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer'
-                          }}
+                          className="btn-secondary"
+                          style={{ padding: '6px 12px', fontSize: '0.78rem' }}
                         >
                           Unblock
                         </button>
@@ -965,9 +961,9 @@ const SettingsModal = ({ onClose }) => {
             <form onSubmit={handleDeleteAccount} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
               <div style={{
                 background: 'rgba(239, 68, 68, 0.12)', border: '1px solid rgba(239, 68, 68, 0.3)',
-                padding: '16px', borderRadius: '16px', color: '#f87171'
+                padding: '18px', borderRadius: '18px', color: '#f87171'
               }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700', fontSize: '1rem', marginBottom: '6px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '800', fontSize: '1rem', marginBottom: '6px' }}>
                   <AlertCircle size={20} /> Permanent Account Deletion
                 </div>
                 <p style={{ fontSize: '0.85rem', margin: 0, lineHeight: 1.5, color: '#fca5a5' }}>
@@ -977,7 +973,7 @@ const SettingsModal = ({ onClose }) => {
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+                <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                   Confirm Password to Proceed
                 </label>
                 <input
@@ -985,7 +981,7 @@ const SettingsModal = ({ onClose }) => {
                   value={deletePassword}
                   onChange={(e) => setDeletePassword(e.target.value)}
                   placeholder="Enter your account password"
-                  style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', borderRadius: '10px', color: 'var(--text-primary)', outline: 'none' }}
+                  style={{ width: '100%', padding: '12px', background: 'var(--bg-input)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'var(--text-primary)', outline: 'none' }}
                 />
               </div>
 
@@ -994,11 +990,11 @@ const SettingsModal = ({ onClose }) => {
                 disabled={deleteSubmitting}
                 style={{
                   padding: '14px', background: '#dc2626', color: '#ffffff',
-                  border: 'none', borderRadius: '12px', fontWeight: '700',
+                  border: 'none', borderRadius: '14px', fontWeight: '800',
                   cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px'
                 }}
               >
-                {deleteSubmitting ? <><Loader2 size={16} className="animate-spin" /> Deleting Account...</> : <><UserX size={18} /> Confirm & Permanently Delete Account</>}
+                {deleteSubmitting ? <RaabtaLoader variant="button" /> : <><UserX size={18} /> Confirm & Permanently Delete Account</>}
               </button>
             </form>
           )}

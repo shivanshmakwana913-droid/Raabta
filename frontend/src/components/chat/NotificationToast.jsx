@@ -22,6 +22,7 @@ const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
         <div
           key={toast.id}
           onClick={() => onSelectToast(toast)}
+          className="animate-slide-up"
           style={{
             pointerEvents: 'auto',
             background: 'var(--bg-secondary)',
@@ -35,9 +36,8 @@ const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
             gap: '12px',
             boxShadow: 'var(--shadow-lg)',
             cursor: 'pointer',
-            transition: 'all 0.2s ease',
-            backdropFilter: 'blur(8px)',
-            animation: 'fadeInSlideUp 0.3s ease-out'
+            transition: 'all var(--transition-fast)',
+            backdropFilter: 'blur(12px)'
           }}
           onMouseEnter={(e) => {
             e.currentTarget.style.transform = 'translateY(-2px)';
@@ -84,7 +84,7 @@ const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
             <div
               style={{
                 fontSize: '0.88rem',
-                fontWeight: '600',
+                fontWeight: '700',
                 color: 'var(--text-primary)',
                 whiteSpace: 'nowrap',
                 overflow: 'hidden',
@@ -114,20 +114,9 @@ const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
               onCloseToast(toast.id);
             }}
             title="Dismiss"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '4px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              flexShrink: 0
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+            aria-label="Dismiss toast"
+            className="action-icon-btn"
+            style={{ flexShrink: 0 }}
           >
             <X size={16} />
           </button>

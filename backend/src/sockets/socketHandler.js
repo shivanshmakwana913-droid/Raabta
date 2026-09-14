@@ -129,10 +129,10 @@ const initSocketServer = (io) => {
       }
     });
 
-    // Real-Time Send Message (Supports text, image & replyTo)
+    // Real-Time Send Message (Supports text, image, gif, sticker & audio)
     socket.on('send_message', async (data, callback) => {
       try {
-        const { conversationId, content, messageType, imageUrl, imagePublicId, replyTo } = data || {};
+        const { conversationId, content, messageType, imageUrl, imagePublicId, audioUrl, audioDuration, replyTo } = data || {};
 
         const conversation = await Conversation.findById(conversationId);
         if (!conversation) {
@@ -155,6 +155,8 @@ const initSocketServer = (io) => {
           messageType,
           imageUrl,
           imagePublicId,
+          audioUrl,
+          audioDuration,
           replyTo,
           isRecipientConnected
         });

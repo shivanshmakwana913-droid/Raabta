@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
-import { X, Flag, AlertCircle, CheckCircle2, Send, Loader2 } from 'lucide-react';
+import { X, Flag, AlertCircle, CheckCircle2, Send } from 'lucide-react';
 import api from '../../services/api';
+import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
   const [reason, setReason] = useState('Spam');
@@ -54,19 +55,19 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
   return (
     <div style={{
       position: 'fixed',
-      top: 0, left: 0, right: 0, bottom: 0,
-      background: 'rgba(15, 23, 42, 0.8)',
-      backdropFilter: 'blur(8px)',
+      inset: 0,
+      background: 'rgba(11, 15, 25, 0.82)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
       zIndex: 1100
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel glass-modal-content animate-slide-up" style={{
         width: '100%',
         maxWidth: '440px',
-        borderRadius: '24px',
+        borderRadius: '28px',
         padding: '28px',
         boxShadow: 'var(--shadow-lg)'
       }}>
@@ -74,13 +75,14 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Flag size={20} color="#f87171" />
-            <h3 style={{ fontSize: '1.2rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+            <h3 style={{ fontSize: '1.2rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
               {targetMessage ? 'Report Message' : 'Report User'}
             </h3>
           </div>
           <button
             onClick={onClose}
-            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+            aria-label="Close modal"
+            className="action-icon-btn"
           >
             <X size={20} />
           </button>
@@ -88,13 +90,13 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
 
         {/* Target Preview */}
         <div style={{
-          background: 'var(--bg-primary)',
+          background: 'var(--bg-input)',
           border: '1px solid var(--border-color)',
           borderRadius: '14px',
           padding: '12px 14px',
           marginBottom: '20px'
         }}>
-          <div style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-primary)' }}>
+          <div style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--text-primary)' }}>
             Reporting: <span style={{ color: 'var(--accent-primary)' }}>{targetUser?.name} (@{targetUser?.username})</span>
           </div>
           {targetMessage && targetMessage.content && (
@@ -116,8 +118,8 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
 
         {/* Feedback Alert */}
         {errorMsg && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             padding: '10px 14px',
@@ -134,10 +136,10 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
         )}
 
         {successMsg && (
-          <div style={{
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#4ade80',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#34d399',
             padding: '10px 14px',
             borderRadius: '12px',
             marginBottom: '16px',
@@ -154,7 +156,7 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
         {/* Form */}
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Reason for Report
             </label>
             <select
@@ -163,9 +165,9 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'var(--bg-primary)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 color: 'var(--text-primary)',
                 outline: 'none'
               }}
@@ -179,7 +181,7 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
           </div>
 
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Additional Details (Optional, max 500 chars)
             </label>
             <textarea
@@ -190,9 +192,9 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'var(--bg-primary)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 color: 'var(--text-primary)',
                 outline: 'none',
                 resize: 'none',
@@ -205,16 +207,8 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="btn-secondary"
+              style={{ flex: 1, padding: '12px' }}
             >
               Cancel
             </button>
@@ -228,7 +222,7 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
                 color: '#ffffff',
                 border: 'none',
                 borderRadius: 'var(--radius-md)',
-                fontWeight: '600',
+                fontWeight: '700',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -236,11 +230,7 @@ const ReportModal = ({ targetUser, targetMessage = null, onClose }) => {
                 gap: '8px'
               }}
             >
-              {isSubmitting ? (
-                <>
-                  <Loader2 size={16} className="animate-spin" /> Submitting...
-                </>
-              ) : (
+              {isSubmitting ? <RaabtaLoader variant="button" /> : (
                 <>
                   <Send size={16} /> Submit Report
                 </>

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Search, LogOut, MessageSquare, UserPlus, X, Settings, Users, Bell, BellOff } from 'lucide-react';
+import { Search, LogOut, MessageSquare, UserPlus, X, Settings, Users, Bell, BellOff, Sun, Moon } from 'lucide-react';
 import api from '../../services/api';
 import ConversationItem from './ConversationItem';
 import { formatConversationTime } from '../../utils/dateFormatter';
+import { SidebarSkeleton } from '../common/RaabtaLoader';
 
 const Sidebar = ({
   currentUser,
@@ -13,7 +14,9 @@ const Sidebar = ({
   onConversationCreated,
   onOpenProfile,
   onOpenCreateGroup,
-  loadingConversations
+  loadingConversations,
+  theme,
+  onToggleTheme
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [searchTab, setSearchTab] = useState('chats'); // 'chats' | 'messages' | 'users'
@@ -172,46 +175,54 @@ const Sidebar = ({
         <div
           onClick={onOpenProfile}
           style={{ display: 'flex', alignItems: 'center', gap: '12px', cursor: 'pointer' }}
-          title="Click to edit profile"
+          title="Click to edit profile & settings"
         >
-          <img
-            src={currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`}
-            alt={currentUser.name}
-            style={{
-              width: '40px',
-              height: '40px',
-              borderRadius: '50%',
-              objectFit: 'cover',
-              border: '2px solid var(--accent-primary)'
-            }}
-          />
+          <div style={{ position: 'relative' }}>
+            <img
+              src={currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`}
+              alt={currentUser.name}
+              style={{
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                objectFit: 'cover',
+                border: '2px solid var(--accent-primary)',
+                boxShadow: '0 2px 8px var(--accent-glow)'
+              }}
+            />
+            <span style={{
+              position: 'absolute', bottom: '0', right: '0',
+              width: '12px', height: '12px', borderRadius: '50%',
+              background: 'var(--status-online)', border: '2px solid var(--bg-primary)'
+            }} />
+          </div>
           <div className="sidebar-header-title">
-            <h3 style={{ fontSize: '0.95rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <h3 style={{ fontSize: '0.98rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               {currentUser.name}
             </h3>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--accent-primary)', fontWeight: '600', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
               @{currentUser.username}
             </span>
           </div>
         </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {onToggleTheme && (
+            <button
+              onClick={onToggleTheme}
+              title={`Switch to ${theme === 'dark' ? 'Light' : 'Dark'} Mode`}
+              className="action-icon-btn"
+            >
+              {theme === 'dark' ? <Sun size={19} /> : <Moon size={19} />}
+            </button>
+          )}
+
           <button
             onClick={onOpenCreateGroup}
             title="Create New Group"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--accent-primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+            className="action-icon-btn"
           >
-            <Users size={20} />
+            <Users size={19} />
           </button>
 
           <button
@@ -223,61 +234,35 @@ const Sidebar = ({
                 ? 'Notifications Blocked in Browser Settings'
                 : 'Enable Browser Notifications'
             }
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: notifPermission === 'granted' ? 'var(--accent-primary)' : 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color var(--transition-fast)'
-            }}
+            className="action-icon-btn"
+            style={{ color: notifPermission === 'granted' ? 'var(--accent-primary)' : 'var(--text-muted)' }}
           >
-            {notifPermission === 'denied' ? <BellOff size={20} /> : <Bell size={20} />}
+            {notifPermission === 'denied' ? <BellOff size={19} /> : <Bell size={19} />}
           </button>
 
           <button
             onClick={onOpenProfile}
             title="Edit Profile Settings"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--text-primary)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+            className="action-icon-btn"
           >
-            <Settings size={20} />
+            <Settings size={19} />
           </button>
 
           <button
             onClick={onLogout}
             title="Logout"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: 'var(--radius-sm)',
-              transition: 'color var(--transition-fast)'
-            }}
-            onMouseEnter={(e) => e.currentTarget.style.color = 'var(--danger)'}
-            onMouseLeave={(e) => e.currentTarget.style.color = 'var(--text-muted)'}
+            className="action-icon-btn"
+            style={{ color: 'var(--danger)' }}
           >
-            <LogOut size={20} />
+            <LogOut size={19} />
           </button>
         </div>
       </div>
 
       {/* Search Input Bar & Mode Selector */}
-      <div style={{ padding: '12px 16px 8px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      <div style={{ padding: '14px 16px 10px 16px', display: 'flex', flexDirection: 'column', gap: '10px' }}>
         <div style={{ position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+          <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
             placeholder={
@@ -291,13 +276,14 @@ const Sidebar = ({
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{
               width: '100%',
-              padding: '10px 36px 10px 38px',
-              background: 'var(--bg-primary)',
+              padding: '10px 36px 10px 40px',
+              background: 'var(--bg-input)',
               border: '1px solid var(--border-color)',
               borderRadius: 'var(--radius-md)',
               color: 'var(--text-primary)',
               fontSize: '0.88rem',
-              outline: 'none'
+              outline: 'none',
+              transition: 'border-color var(--transition-fast)'
             }}
           />
           {searchQuery && (
@@ -317,7 +303,7 @@ const Sidebar = ({
         </div>
 
         {/* Search Mode Pill Buttons */}
-        <div style={{ display: 'flex', gap: '6px' }}>
+        <div style={{ display: 'flex', gap: '6px', background: 'var(--bg-input)', padding: '3px', borderRadius: 'var(--radius-md)', border: '1px solid var(--border-color)' }}>
           {[
             { id: 'chats', label: 'Chats' },
             { id: 'messages', label: 'Messages' },
@@ -330,15 +316,15 @@ const Sidebar = ({
                 onClick={() => setSearchTab(tab.id)}
                 style={{
                   flex: 1,
-                  padding: '5px 8px',
+                  padding: '6px 8px',
                   borderRadius: 'var(--radius-sm)',
                   fontSize: '0.78rem',
-                  fontWeight: isActive ? '600' : '400',
+                  fontWeight: isActive ? '700' : '500',
                   border: 'none',
-                  background: isActive ? 'var(--accent-gradient)' : 'var(--bg-tertiary)',
+                  background: isActive ? 'var(--accent-gradient)' : 'transparent',
                   color: isActive ? '#ffffff' : 'var(--text-secondary)',
                   cursor: 'pointer',
-                  transition: 'all 0.2s ease'
+                  transition: 'all var(--transition-fast)'
                 }}
               >
                 {tab.label}
@@ -349,17 +335,15 @@ const Sidebar = ({
       </div>
 
       {/* Content Area */}
-      <div style={{ flex: 1, overflowY: 'auto', padding: '0 8px 12px 8px' }}>
+      <div style={{ flex: 1, overflowY: 'auto', padding: '4px 8px 14px 8px' }}>
         {/* TAB 1: CHATS (Local Filter) */}
         {searchTab === 'chats' && (
           <div>
-            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
-              {searchQuery.trim() ? `Filtered Conversations (${filteredConversations.length})` : 'Conversations'}
+            <div style={{ padding: '8px 12px 6px 12px', fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+              {searchQuery.trim() ? `Filtered (${filteredConversations.length})` : 'Conversations'}
             </div>
             {loadingConversations ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-                Loading conversations...
-              </div>
+              <SidebarSkeleton />
             ) : filteredConversations.length > 0 ? (
               filteredConversations.map((conv) => (
                 <ConversationItem
@@ -371,9 +355,9 @@ const Sidebar = ({
                 />
               ))
             ) : (
-              <div style={{ padding: '32px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
-                <MessageSquare size={32} style={{ marginBottom: '8px', opacity: 0.5 }} />
-                <p>{searchQuery.trim() ? `No chats matching "${searchQuery}"` : 'No active chats yet.'}</p>
+              <div style={{ padding: '36px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+                <MessageSquare size={36} style={{ marginBottom: '10px', opacity: 0.4, color: 'var(--accent-primary)' }} />
+                <p>{searchQuery.trim() ? `No chats matching "${searchQuery}"` : 'No active conversations yet.'}</p>
               </div>
             )}
           </div>
@@ -382,17 +366,15 @@ const Sidebar = ({
         {/* TAB 2: MESSAGES (Global Message Search) */}
         {searchTab === 'messages' && (
           <div>
-            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ padding: '8px 12px 6px 12px', fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               Message Search Results
             </div>
             {!searchQuery.trim() ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 Type a keyword above to search text messages across all your chats.
               </div>
             ) : isSearchingMessages ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-                Searching message history...
-              </div>
+              <SidebarSkeleton />
             ) : messageResults.length > 0 ? (
               messageResults.map((msg) => {
                 const isGroup = msg.conversation?.type === 'group';
@@ -405,19 +387,19 @@ const Sidebar = ({
                     key={msg._id}
                     onClick={() => handleSelectMessageResult(msg)}
                     style={{
-                      padding: '10px 12px',
+                      padding: '12px 14px',
                       borderRadius: 'var(--radius-md)',
                       cursor: 'pointer',
                       background: 'var(--bg-primary)',
-                      marginBottom: '6px',
+                      marginBottom: '8px',
                       border: '1px solid var(--border-color)',
-                      transition: 'border-color 0.2s ease'
+                      transition: 'all var(--transition-fast)'
                     }}
                     onMouseEnter={(e) => e.currentTarget.style.borderColor = 'var(--accent-primary)'}
                     onMouseLeave={(e) => e.currentTarget.style.borderColor = 'var(--border-color)'}
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '4px' }}>
-                      <span style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--accent-primary)' }}>
+                      <span style={{ fontSize: '0.85rem', fontWeight: '700', color: 'var(--accent-primary)' }}>
                         {convTitle}
                       </span>
                       <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>
@@ -425,8 +407,8 @@ const Sidebar = ({
                       </span>
                     </div>
 
-                    <div style={{ fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ fontWeight: '500', color: 'var(--text-primary)' }}>
+                    <div style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{ fontWeight: '600', color: 'var(--text-primary)' }}>
                         {msg.sender?.name || msg.sender?.username}:
                       </span>
                       <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', flex: 1 }}>
@@ -437,7 +419,7 @@ const Sidebar = ({
                 );
               })
             ) : (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
                 No messages found matching "{searchQuery}"
               </div>
             )}
@@ -447,17 +429,15 @@ const Sidebar = ({
         {/* TAB 3: USERS (User Search) */}
         {searchTab === 'users' && (
           <div>
-            <div style={{ padding: '8px 12px', fontSize: '0.75rem', fontWeight: '600', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
+            <div style={{ padding: '8px 12px 6px 12px', fontSize: '0.72rem', fontWeight: '700', color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
               User Search Results
             </div>
             {!searchQuery.trim() ? (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                 Type a name or username above to search for people.
               </div>
             ) : isSearchingUsers ? (
-              <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.88rem' }}>
-                Searching users...
-              </div>
+              <SidebarSkeleton />
             ) : userResults.length > 0 ? (
               userResults.map((user) => (
                 <div
@@ -467,20 +447,21 @@ const Sidebar = ({
                     display: 'flex',
                     alignItems: 'center',
                     gap: '12px',
-                    padding: '10px 12px',
+                    padding: '12px 14px',
                     borderRadius: 'var(--radius-md)',
                     cursor: 'pointer',
-                    transition: 'background var(--transition-fast)'
+                    transition: 'background var(--transition-fast)',
+                    marginBottom: '4px'
                   }}
                   className="search-result-item"
                 >
                   <img
                     src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
                     alt={user.name}
-                    style={{ width: '38px', height: '38px', borderRadius: '50%', objectFit: 'cover' }}
+                    style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
                   />
                   <div style={{ flex: 1, minWidth: 0 }}>
-                    <div style={{ fontSize: '0.9rem', fontWeight: '600', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '0.9rem', fontWeight: '700', color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {user.name}
                     </div>
                     <div style={{ fontSize: '0.78rem', fontWeight: '600', color: 'var(--accent-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -496,7 +477,7 @@ const Sidebar = ({
                 </div>
               ))
             ) : (
-              <div style={{ padding: '24px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
+              <div style={{ padding: '28px 16px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.88rem' }}>
                 No users found matching "{searchQuery}"
               </div>
             )}

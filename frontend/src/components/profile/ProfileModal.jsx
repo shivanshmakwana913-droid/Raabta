@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { X, User, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, Loader2, AtSign } from 'lucide-react';
+import { X, User, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, AtSign } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
+import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const ProfileModal = ({ onClose }) => {
   const { user, setUser } = useAuth();
@@ -136,23 +137,20 @@ const ProfileModal = ({ onClose }) => {
   return (
     <div style={{
       position: 'fixed',
-      top: 0,
-      left: 0,
-      right: 0,
-      bottom: 0,
-      background: 'rgba(15, 23, 42, 0.75)',
-      backdropFilter: 'blur(8px)',
+      inset: 0,
+      background: 'rgba(11, 15, 25, 0.82)',
+      backdropFilter: 'blur(12px)',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '20px',
       zIndex: 1000
     }}>
-      <div className="glass-panel animate-fade-in" style={{
+      <div className="glass-panel glass-modal-content animate-slide-up" style={{
         width: '100%',
         maxWidth: '480px',
-        borderRadius: '24px',
-        padding: '28px',
+        borderRadius: '28px',
+        padding: '30px',
         boxShadow: 'var(--shadow-lg)',
         maxHeight: '90vh',
         overflowY: 'auto',
@@ -160,22 +158,13 @@ const ProfileModal = ({ onClose }) => {
       }}>
         {/* Header */}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '24px' }}>
-          <h3 style={{ fontSize: '1.3rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0 }}>
+          <h3 style={{ fontSize: '1.3rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0 }}>
             Edit Profile
           </h3>
           <button
             onClick={onClose}
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '6px',
-              borderRadius: '50%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            aria-label="Close modal"
+            className="action-icon-btn"
           >
             <X size={20} />
           </button>
@@ -183,13 +172,13 @@ const ProfileModal = ({ onClose }) => {
 
         {/* Feedback Alerts */}
         {errorMessage && (
-          <div style={{
-            background: 'rgba(239, 68, 68, 0.15)',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(239, 68, 68, 0.12)',
             border: '1px solid rgba(239, 68, 68, 0.3)',
             color: '#f87171',
             padding: '10px 14px',
-            borderRadius: '12px',
-            marginBottom: '16px',
+            borderRadius: '14px',
+            marginBottom: '18px',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
@@ -201,13 +190,13 @@ const ProfileModal = ({ onClose }) => {
         )}
 
         {successMessage && (
-          <div style={{
-            background: 'rgba(34, 197, 94, 0.15)',
-            border: '1px solid rgba(34, 197, 94, 0.3)',
-            color: '#4ade80',
+          <div className="animate-fade-in" style={{
+            background: 'rgba(16, 185, 129, 0.12)',
+            border: '1px solid rgba(16, 185, 129, 0.3)',
+            color: '#34d399',
             padding: '10px 14px',
-            borderRadius: '12px',
-            marginBottom: '16px',
+            borderRadius: '14px',
+            marginBottom: '18px',
             display: 'flex',
             alignItems: 'center',
             gap: '10px',
@@ -227,8 +216,8 @@ const ProfileModal = ({ onClose }) => {
                 src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                 alt="Avatar Preview"
                 style={{
-                  width: '84px',
-                  height: '84px',
+                  width: '88px',
+                  height: '88px',
                   borderRadius: '50%',
                   objectFit: 'cover',
                   border: '3px solid var(--accent-primary)',
@@ -246,8 +235,8 @@ const ProfileModal = ({ onClose }) => {
                   background: 'var(--accent-gradient)',
                   border: 'none',
                   color: '#fff',
-                  width: '28px',
-                  height: '28px',
+                  width: '30px',
+                  height: '30px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -261,7 +250,7 @@ const ProfileModal = ({ onClose }) => {
             </div>
 
             <div style={{ width: '100%', position: 'relative' }}>
-              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+              <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
                 Avatar Image URL
               </label>
               <div style={{ position: 'relative' }}>
@@ -274,9 +263,9 @@ const ProfileModal = ({ onClose }) => {
                   style={{
                     width: '100%',
                     padding: '10px 12px 10px 36px',
-                    background: 'var(--bg-primary)',
+                    background: 'var(--bg-input)',
                     border: '1px solid var(--border-color)',
-                    borderRadius: '10px',
+                    borderRadius: '12px',
                     color: 'var(--text-primary)',
                     fontSize: '0.88rem',
                     outline: 'none'
@@ -288,7 +277,7 @@ const ProfileModal = ({ onClose }) => {
 
           {/* Full Name */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Full Name
             </label>
             <div style={{ position: 'relative' }}>
@@ -300,9 +289,9 @@ const ProfileModal = ({ onClose }) => {
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 36px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   color: 'var(--text-primary)',
                   fontSize: '0.88rem',
                   outline: 'none'
@@ -313,26 +302,24 @@ const ProfileModal = ({ onClose }) => {
 
           {/* Username */}
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-              <label style={{ fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)' }}>
                 Username (@)
               </label>
               <span style={{
-                fontSize: '0.75rem',
+                fontSize: '0.78rem',
                 fontWeight: '600',
                 color: isCheckingUsername
                   ? 'var(--text-muted)'
                   : usernameStatus === 'available'
-                  ? '#4ade80'
-                  : '#f87171',
+                  ? '#10b981'
+                  : '#ef4444',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '4px'
               }}>
                 {isCheckingUsername ? (
-                  <>
-                    <Loader2 size={12} className="animate-spin" /> Checking...
-                  </>
+                  <RaabtaLoader variant="button" />
                 ) : usernameStatus === 'available' ? (
                   <>✓ {usernameMessage}</>
                 ) : (
@@ -350,15 +337,15 @@ const ProfileModal = ({ onClose }) => {
                 style={{
                   width: '100%',
                   padding: '10px 12px 10px 36px',
-                  background: 'var(--bg-primary)',
+                  background: 'var(--bg-input)',
                   border: `1px solid ${
                     isCheckingUsername
                       ? 'var(--border-color)'
                       : usernameStatus === 'available'
-                      ? 'rgba(74, 222, 128, 0.5)'
-                      : 'rgba(248, 113, 113, 0.5)'
+                      ? 'rgba(16, 185, 129, 0.5)'
+                      : 'rgba(239, 68, 68, 0.5)'
                   }`,
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   color: 'var(--text-primary)',
                   fontSize: '0.88rem',
                   outline: 'none'
@@ -369,8 +356,8 @@ const ProfileModal = ({ onClose }) => {
 
           {/* Email (Read-only) */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
-              Email Address (Cannot be changed)
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
+              Email Address (Read-Only)
             </label>
             <div style={{ position: 'relative' }}>
               <Mail size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
@@ -384,7 +371,7 @@ const ProfileModal = ({ onClose }) => {
                   padding: '10px 12px 10px 36px',
                   background: 'var(--bg-tertiary)',
                   border: '1px solid var(--border-color)',
-                  borderRadius: '10px',
+                  borderRadius: '12px',
                   color: 'var(--text-muted)',
                   fontSize: '0.88rem',
                   cursor: 'not-allowed'
@@ -395,7 +382,7 @@ const ProfileModal = ({ onClose }) => {
 
           {/* Bio */}
           <div>
-            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '500', color: 'var(--text-secondary)', marginBottom: '4px' }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>
               Bio ({bio.length}/200)
             </label>
             <textarea
@@ -406,9 +393,9 @@ const ProfileModal = ({ onClose }) => {
               style={{
                 width: '100%',
                 padding: '10px 12px',
-                background: 'var(--bg-primary)',
+                background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
-                borderRadius: '10px',
+                borderRadius: '12px',
                 color: 'var(--text-primary)',
                 fontSize: '0.88rem',
                 outline: 'none',
@@ -422,16 +409,8 @@ const ProfileModal = ({ onClose }) => {
             <button
               type="button"
               onClick={onClose}
-              style={{
-                flex: 1,
-                padding: '12px',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                border: 'none',
-                borderRadius: 'var(--radius-md)',
-                fontWeight: '600',
-                cursor: 'pointer'
-              }}
+              className="btn-secondary"
+              style={{ flex: 1, padding: '12px' }}
             >
               Cancel
             </button>
@@ -446,7 +425,7 @@ const ProfileModal = ({ onClose }) => {
                 cursor: isSaveDisabled ? 'not-allowed' : 'pointer'
               }}
             >
-              {isSubmitting ? 'Saving...' : (
+              {isSubmitting ? <RaabtaLoader variant="button" /> : (
                 <>
                   <Save size={16} /> Save Changes
                 </>

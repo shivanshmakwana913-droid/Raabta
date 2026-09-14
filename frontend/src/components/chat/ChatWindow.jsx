@@ -1,9 +1,15 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Loader2, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic } from 'lucide-react';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { formatTime, formatLastSeen } from '../../utils/dateFormatter';
 import GroupInfoModal from '../group/GroupInfoModal';
+import { ChatSkeleton, RaabtaLoader } from '../common/RaabtaLoader';
+import GifPicker from './GifPicker';
+import StickerPicker from './StickerPicker';
+import EmojiPickerPopover from './EmojiPickerPopover';
+import VoiceMessage from './VoiceMessage';
+import VoiceRecorder from './VoiceRecorder';
 
 const ALLOWED_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -14,7 +20,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
   const [typingUsers, setTypingUsers] = useState({});
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
 
-  // Phase 9 States: Reply, Edit, React
+  // Reply, Edit, React States
   const [replyingToMessage, setReplyingToMessage] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
   const [activeReactionMenuMsgId, setActiveReactionMenuMsgId] = useState(null);
@@ -28,6 +34,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   // Lightbox full image preview modal
   const [fullImageViewUrl, setFullImageViewUrl] = useState(null);
+
+  // Media Pickers & Voice States (GIFs, Stickers, Emojis, Voice)
+  const [showGifPicker, setShowGifPicker] = useState(false);
+  const [showStickerPicker, setShowStickerPicker] = useState(false);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [isRecordingVoice, setIsRecordingVoice] = useState(false);
 
   // Scroll experience states & refs
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -72,6 +84,10 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (fullImageViewUrl) setFullImageViewUrl(null);
+        else if (isRecordingVoice) setIsRecordingVoice(false);
+        else if (showEmojiPicker) setShowEmojiPicker(false);
+        else if (showGifPicker) setShowGifPicker(false);
+        else if (showStickerPicker) setShowStickerPicker(false);
         else if (activeReactionMenuMsgId) setActiveReactionMenuMsgId(null);
         else if (editingMessage) handleCancelEdit();
         else if (replyingToMessage) setReplyingToMessage(null);
@@ -79,7 +95,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fullImageViewUrl, activeReactionMenuMsgId, editingMessage, replyingToMessage]);
+  }, [fullImageViewUrl, isRecordingVoice, showEmojiPicker, showGifPicker, showStickerPicker, activeReactionMenuMsgId, editingMessage, replyingToMessage]);
 
   // Lock body scroll when image lightbox is open
   useEffect(() => {
@@ -396,6 +412,101 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     }
   };
 
+  const handleSelectGif = async (gifUrl, gifTitle) => {
+    setShowGifPicker(false);
+    const payload = {
+      conversationId: conversation._id,
+      content: gifTitle || 'GIF',
+      messageType: 'gif',
+      imageUrl: gifUrl,
+      replyTo: replyingToMessage?._id || null
+    };
+
+    if (socket) {
+      socket.emit('send_message', payload, (res) => {
+        if (res && res.status === 'ok' && onUpdateLastMessage) {
+          onUpdateLastMessage(conversation._id, res.data);
+        }
+      });
+    } else {
+      try {
+        const { data } = await api.post('/messages', payload);
+        setMessages((prev) => [...prev, data]);
+        if (onUpdateLastMessage) onUpdateLastMessage(conversation._id, data);
+      } catch (err) {
+        console.error('[Send GIF Error]:', err.message);
+      }
+    }
+    setReplyingToMessage(null);
+    isUserScrolledUpRef.current = false;
+    scrollToBottom('smooth');
+  };
+
+  const handleSelectSticker = async (stickerUrl, stickerName) => {
+    setShowStickerPicker(false);
+    const payload = {
+      conversationId: conversation._id,
+      content: stickerName || 'Sticker',
+      messageType: 'sticker',
+      imageUrl: stickerUrl,
+      replyTo: replyingToMessage?._id || null
+    };
+
+    if (socket) {
+      socket.emit('send_message', payload, (res) => {
+        if (res && res.status === 'ok' && onUpdateLastMessage) {
+          onUpdateLastMessage(conversation._id, res.data);
+        }
+      });
+    } else {
+      try {
+        const { data } = await api.post('/messages', payload);
+        setMessages((prev) => [...prev, data]);
+        if (onUpdateLastMessage) onUpdateLastMessage(conversation._id, data);
+      } catch (err) {
+        console.error('[Send Sticker Error]:', err.message);
+      }
+    }
+    setReplyingToMessage(null);
+    isUserScrolledUpRef.current = false;
+    scrollToBottom('smooth');
+  };
+
+  const handleSelectEmoji = (emoji) => {
+    setInputText((prev) => prev + emoji);
+  };
+
+  const handleSendVoiceMessage = async ({ audioUrl, duration }) => {
+    setIsRecordingVoice(false);
+    const payload = {
+      conversationId: conversation._id,
+      content: 'Voice message',
+      messageType: 'audio',
+      audioUrl,
+      audioDuration: duration,
+      replyTo: replyingToMessage?._id || null
+    };
+
+    if (socket) {
+      socket.emit('send_message', payload, (res) => {
+        if (res && res.status === 'ok' && onUpdateLastMessage) {
+          onUpdateLastMessage(conversation._id, res.data);
+        }
+      });
+    } else {
+      try {
+        const { data } = await api.post('/messages', payload);
+        setMessages((prev) => [...prev, data]);
+        if (onUpdateLastMessage) onUpdateLastMessage(conversation._id, data);
+      } catch (err) {
+        console.error('[Send Voice Message Error]:', err.message);
+      }
+    }
+    setReplyingToMessage(null);
+    isUserScrolledUpRef.current = false;
+    scrollToBottom('smooth');
+  };
+
   const handleStartEdit = (msg) => {
     setEditingMessage(msg);
     setReplyingToMessage(null);
@@ -469,16 +580,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           onClick={onBackMobile}
           aria-label="Back to conversations"
           title="Back to conversations"
-          className="mobile-back-btn"
-          style={{
-            display: 'none',
-            background: 'transparent',
-            border: 'none',
-            color: 'var(--text-primary)',
-            cursor: 'pointer',
-            padding: '6px',
-            borderRadius: '50%'
-          }}
+          className="mobile-back-btn action-icon-btn"
+          style={{ display: 'none' }}
         >
           <ArrowLeft size={20} />
         </button>
@@ -487,29 +590,30 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           <img
             src={headerAvatar}
             alt={headerName}
-            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover' }}
+            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }}
           />
           {!isGroup && (
             <span style={{
               position: 'absolute',
               bottom: 0,
               right: 0,
-              width: '11px',
-              height: '11px',
+              width: '12px',
+              height: '12px',
               borderRadius: '50%',
               backgroundColor: recipient?.isOnline ? 'var(--status-online)' : 'var(--status-offline)',
-              border: '2px solid var(--bg-secondary)'
+              border: '2px solid var(--bg-secondary)',
+              boxShadow: recipient?.isOnline ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none'
             }} />
           )}
         </div>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '600', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+          <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
             {headerName}
           </h3>
           <div style={{ fontSize: '0.78rem', color: renderTypingText() ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
             {renderTypingText() ? (
-              <span className="animate-pulse" style={{ fontWeight: '500' }}>{renderTypingText()}</span>
+              <span className="animate-pulse" style={{ fontWeight: '600' }}>{renderTypingText()}</span>
             ) : isGroup ? (
               <span>{conversation.participants?.length || 0} members</span>
             ) : (
@@ -523,14 +627,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             onClick={() => onRequestReport({ user: recipient, message: null })}
             aria-label="Report user"
             title="Report User"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '50%'
-            }}
+            className="action-icon-btn"
+            style={{ color: '#f87171' }}
           >
             <Flag size={18} />
           </button>
@@ -541,14 +639,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             onClick={() => setIsGroupInfoOpen(true)}
             aria-label="Group details"
             title="Group details"
-            style={{
-              background: 'transparent',
-              border: 'none',
-              color: 'var(--text-muted)',
-              cursor: 'pointer',
-              padding: '8px',
-              borderRadius: '50%'
-            }}
+            className="action-icon-btn"
           >
             <Info size={20} />
           </button>
@@ -573,9 +664,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         }}
       >
         {loading ? (
-          <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
-            <Loader2 className="animate-pulse" size={28} />
-          </div>
+          <ChatSkeleton />
         ) : messages.length === 0 ? (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: '8px' }}>
             <p>No messages yet. Say hi!</p>
@@ -592,7 +681,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             const isSameSenderAsPrev = prevMsg && !prevMsg.isDeleted &&
               (prevMsg.sender?._id || prevMsg.sender)?.toString() === (msg.sender?._id || msg.sender)?.toString();
 
-            const marginTop = isSameSenderAsPrev ? '3px' : '12px';
+            const marginTop = isSameSenderAsPrev ? '4px' : '12px';
 
             return (
               <div
@@ -614,7 +703,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
               >
                 {/* Sender Name in Group Chat */}
                 {!isMe && isGroup && !isDeleted && !isSameSenderAsPrev && (
-                  <span style={{ fontSize: '0.75rem', fontWeight: '600', color: 'var(--accent-primary)', marginBottom: '3px', paddingLeft: '4px' }}>
+                  <span style={{ fontSize: '0.75rem', fontWeight: '700', color: 'var(--accent-primary)', marginBottom: '3px', paddingLeft: '4px' }}>
                     {msg.sender?.name || msg.sender?.username || 'User'}
                   </span>
                 )}
@@ -623,7 +712,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                 <div
                   className="message-bubble-wrapper"
                   style={{
-                    position: 'relative'
+                    position: 'relative',
+                    maxWidth: '75%'
                   }}
                 >
                   {/* Action Menu Trigger Popover */}
@@ -666,7 +756,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                         <Smile size={14} />
                       </button>
 
-                      {isMe && !isImageMsg && (
+                      {isMe && !isImageMsg && msg.messageType !== 'gif' && msg.messageType !== 'sticker' && msg.messageType !== 'audio' && (
                         <button
                           onClick={() => handleStartEdit(msg)}
                           aria-label="Edit message"
@@ -704,9 +794,10 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                   {/* Emoji Quick Picker Dropdown */}
                   {activeReactionMenuMsgId === msg._id && !isDeleted && (
                     <div
+                      className="animate-scale-in"
                       style={{
                         position: 'absolute',
-                        top: '-44px',
+                        top: '-46px',
                         right: isMe ? '0' : 'auto',
                         left: isMe ? 'auto' : '0',
                         background: 'var(--bg-tertiary)',
@@ -744,14 +835,16 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                     style={{
                       background: isDeleted
                         ? 'var(--bg-secondary)'
+                        : msg.messageType === 'sticker'
+                        ? 'transparent'
                         : isMe
                         ? 'var(--accent-gradient)'
                         : 'var(--bg-secondary)',
                       color: isMe ? '#ffffff' : 'var(--text-primary)',
-                      border: isMe ? 'none' : '1px solid var(--border-color)',
-                      padding: isImageMsg && !isDeleted ? '4px' : '10px 14px',
-                      borderRadius: isMe ? '18px 18px 4px 18px' : '18px 18px 18px 4px',
-                      boxShadow: 'var(--shadow-sm)',
+                      border: msg.messageType === 'sticker' || isMe ? 'none' : '1px solid var(--border-color)',
+                      padding: (isImageMsg || msg.messageType === 'gif') && !isDeleted ? '5px' : msg.messageType === 'sticker' ? '0px' : '10px 14px',
+                      borderRadius: isMe ? '20px 20px 4px 20px' : '20px 20px 20px 4px',
+                      boxShadow: msg.messageType === 'sticker' ? 'none' : 'var(--shadow-sm)',
                       wordBreak: 'break-word',
                       overflowWrap: 'anywhere'
                     }}
@@ -768,7 +861,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                           fontSize: '0.78rem'
                         }}
                       >
-                        <div style={{ fontWeight: '600', color: isMe ? '#e0e7ff' : 'var(--accent-primary)' }}>
+                        <div style={{ fontWeight: '700', color: isMe ? '#e0e7ff' : 'var(--accent-primary)' }}>
                           {msg.replyTo.sender?.name || msg.replyTo.sender?.username || 'Replying to message'}
                         </div>
                         <div style={{ color: isMe ? '#f1f5f9' : 'var(--text-secondary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -776,6 +869,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                             ? 'This message was deleted'
                             : msg.replyTo.messageType === 'image'
                             ? '[Image]'
+                            : msg.replyTo.messageType === 'gif'
+                            ? '[GIF]'
+                            : msg.replyTo.messageType === 'sticker'
+                            ? '[Sticker]'
+                            : msg.replyTo.messageType === 'audio'
+                            ? '[Voice message]'
                             : msg.replyTo.content}
                         </div>
                       </div>
@@ -786,9 +885,66 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                       <span style={{ fontSize: '0.88rem', fontStyle: 'italic', color: 'var(--text-muted)' }}>
                         This message was deleted.
                       </span>
+                    ) : msg.messageType === 'audio' ? (
+                      /* Voice Message View */
+                      <VoiceMessage
+                        audioUrl={msg.audioUrl || msg.imageUrl}
+                        duration={msg.audioDuration || 0}
+                        isMe={isMe}
+                      />
+                    ) : msg.messageType === 'sticker' ? (
+                      /* Sticker Message View */
+                      <div style={{ padding: '2px', textAlign: 'center' }}>
+                        <img
+                          src={msg.imageUrl}
+                          alt={msg.content || "Sticker"}
+                          style={{
+                            width: '110px',
+                            height: '110px',
+                            objectFit: 'contain',
+                            filter: 'drop-shadow(0 4px 8px rgba(0,0,0,0.18))'
+                          }}
+                        />
+                      </div>
+                    ) : msg.messageType === 'gif' ? (
+                      /* GIF Message View */
+                      <div style={{ borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
+                        <img
+                          src={msg.imageUrl}
+                          alt="GIF attachment"
+                          onClick={() => setFullImageViewUrl(msg.imageUrl)}
+                          style={{
+                            width: '100%',
+                            maxHeight: '280px',
+                            objectFit: 'cover',
+                            borderRadius: '12px',
+                            display: 'block'
+                          }}
+                        />
+                        <span style={{
+                          position: 'absolute',
+                          bottom: '8px',
+                          left: '8px',
+                          background: 'rgba(0, 0, 0, 0.7)',
+                          backdropFilter: 'blur(4px)',
+                          color: '#ffffff',
+                          fontWeight: '800',
+                          fontSize: '0.65rem',
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          letterSpacing: '0.5px'
+                        }}>
+                          GIF
+                        </span>
+                        {msg.content && msg.content !== 'GIF' && (
+                          <div style={{ padding: '8px 10px 4px 10px', fontSize: '0.9rem', color: isMe ? '#ffffff' : 'var(--text-primary)' }}>
+                            {msg.content}
+                          </div>
+                        )}
+                      </div>
                     ) : isImageMsg ? (
                       /* Image Message View */
-                      <div style={{ borderRadius: '14px', overflow: 'hidden', cursor: 'pointer' }}>
+                      <div style={{ borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
                         <img
                           src={msg.imageUrl}
                           alt="Shared attachment"
@@ -802,14 +958,14 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                           }}
                         />
                         {msg.content && (
-                          <div style={{ padding: '6px 8px 4px 8px', fontSize: '0.9rem', color: isMe ? '#ffffff' : 'var(--text-primary)' }}>
+                          <div style={{ padding: '8px 10px 4px 10px', fontSize: '0.9rem', color: isMe ? '#ffffff' : 'var(--text-primary)' }}>
                             {msg.content}
                           </div>
                         )}
                       </div>
                     ) : (
                       /* Text Message View */
-                      <span style={{ fontSize: '0.92rem', lineHeight: '1.4' }}>
+                      <span style={{ fontSize: '0.92rem', lineHeight: '1.45' }}>
                         {msg.content}
                       </span>
                     )}
@@ -823,7 +979,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                         gap: '4px',
                         marginTop: '4px',
                         fontSize: '0.7rem',
-                        color: isMe ? 'rgba(255,255,255,0.75)' : 'var(--text-muted)'
+                        color: isMe ? 'rgba(255,255,255,0.8)' : 'var(--text-muted)'
                       }}
                     >
                       {msg.editedAt && !isDeleted && (
@@ -837,6 +993,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                   {/* Reaction Pill Counters */}
                   {Object.keys(reactionCounts).length > 0 && !isDeleted && (
                     <div
+                      className="animate-scale-in"
                       style={{
                         display: 'flex',
                         gap: '4px',
@@ -854,17 +1011,17 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                               background: isMyReactionEmoji ? 'var(--accent-glow)' : 'var(--bg-secondary)',
                               border: `1px solid ${isMyReactionEmoji ? 'var(--accent-primary)' : 'var(--border-color)'}`,
                               borderRadius: '12px',
-                              padding: '2px 6px',
+                              padding: '2px 7px',
                               fontSize: '0.75rem',
                               cursor: 'pointer',
                               display: 'inline-flex',
                               alignItems: 'center',
-                              gap: '3px',
+                              gap: '4px',
                               boxShadow: 'var(--shadow-sm)'
                             }}
                           >
                             <span>{emoji}</span>
-                            <span style={{ fontWeight: '600', color: isMyReactionEmoji ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+                            <span style={{ fontWeight: '700', color: isMyReactionEmoji ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
                               {count}
                             </span>
                           </span>
@@ -888,13 +1045,13 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           title="Scroll to bottom"
           style={{
             position: 'absolute',
-            bottom: '84px',
+            bottom: '88px',
             right: '24px',
-            width: '40px',
-            height: '40px',
+            width: '42px',
+            height: '42px',
             borderRadius: '50%',
             background: 'var(--bg-secondary)',
-            border: '1px solid var(--border-color)',
+            border: '1px solid var(--border-color-strong)',
             color: 'var(--accent-primary)',
             boxShadow: 'var(--shadow-md)',
             display: 'flex',
@@ -902,10 +1059,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             justifyContent: 'center',
             cursor: 'pointer',
             zIndex: 40,
-            transition: 'transform 0.2s ease, background 0.2s ease'
+            transition: 'transform 0.2s ease'
           }}
-          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
-          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
           <ChevronDown size={20} />
         </button>
@@ -931,21 +1086,27 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       {/* Replying Preview Banner */}
       {replyingToMessage && (
         <div style={{
-          padding: '8px 16px',
+          padding: '10px 18px',
           background: 'var(--bg-secondary)',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between'
         }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', overflow: 'hidden' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px', overflow: 'hidden' }}>
             <CornerUpLeft size={16} color="var(--accent-primary)" />
             <div style={{ fontSize: '0.82rem', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-              <span style={{ fontWeight: '600', color: 'var(--accent-primary)' }}>
+              <span style={{ fontWeight: '700', color: 'var(--accent-primary)' }}>
                 Replying to {replyingToMessage.sender?.name || replyingToMessage.sender?.username}:
               </span>{' '}
               <span style={{ color: 'var(--text-secondary)' }}>
-                {replyingToMessage.messageType === 'image' ? '[Image]' : replyingToMessage.content}
+                {replyingToMessage.messageType === 'image'
+                  ? '[Image]'
+                  : replyingToMessage.messageType === 'gif'
+                  ? '[GIF]'
+                  : replyingToMessage.messageType === 'sticker'
+                  ? '[Sticker]'
+                  : replyingToMessage.content}
               </span>
             </div>
           </div>
@@ -956,7 +1117,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       {/* Editing Mode Banner */}
       {editingMessage && (
         <div style={{
-          padding: '8px 16px',
+          padding: '10px 18px',
           background: 'var(--bg-secondary)',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
@@ -965,13 +1126,13 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <Edit3 size={16} color="var(--accent-primary)" />
-            <span style={{ fontSize: '0.82rem', fontWeight: '600', color: 'var(--accent-primary)' }}>
+            <span style={{ fontSize: '0.82rem', fontWeight: '700', color: 'var(--accent-primary)' }}>
               Editing Message
             </span>
           </div>
           <button
             onClick={handleCancelEdit}
-            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer' }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', fontSize: '0.8rem', cursor: 'pointer', fontWeight: '600' }}
           >
             Cancel
           </button>
@@ -981,7 +1142,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       {/* Selected Image Preview Container */}
       {imagePreviewUrl && (
         <div style={{
-          padding: '10px 16px',
+          padding: '10px 18px',
           background: 'var(--bg-secondary)',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
@@ -992,7 +1153,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             <img
               src={imagePreviewUrl}
               alt="Preview"
-              style={{ width: '56px', height: '56px', borderRadius: '8px', objectFit: 'cover' }}
+              style={{ width: '56px', height: '56px', borderRadius: '10px', objectFit: 'cover' }}
             />
             <button
               onClick={handleClearSelectedImage}
@@ -1021,6 +1182,26 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         </div>
       )}
 
+      {/* Media Popover Pickers */}
+      {showEmojiPicker && (
+        <EmojiPickerPopover
+          onSelectEmoji={handleSelectEmoji}
+          onClose={() => setShowEmojiPicker(false)}
+        />
+      )}
+      {showGifPicker && (
+        <GifPicker
+          onSelectGif={handleSelectGif}
+          onClose={() => setShowGifPicker(false)}
+        />
+      )}
+      {showStickerPicker && (
+        <StickerPicker
+          onSelectSticker={handleSelectSticker}
+          onClose={() => setShowStickerPicker(false)}
+        />
+      )}
+
       {/* Input Box / Form */}
       <form
         onSubmit={handleSubmitMessage}
@@ -1031,7 +1212,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
           alignItems: 'center',
-          gap: '10px'
+          gap: '8px',
+          position: 'relative'
         }}
       >
         <input
@@ -1042,62 +1224,146 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           style={{ display: 'none' }}
         />
 
-        <button
-          type="button"
-          onClick={() => fileInputRef.current?.click()}
-          disabled={editingMessage !== null}
-          aria-label="Attach image"
-          title="Attach Image"
-          style={{
-            background: 'transparent',
-            border: 'none',
-            color: selectedImageFile ? 'var(--accent-primary)' : 'var(--text-muted)',
-            cursor: 'pointer',
-            padding: '10px',
-            borderRadius: '50%',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            opacity: editingMessage ? 0.4 : 1
-          }}
-        >
-          <ImageIcon size={22} />
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {/* Attach Image */}
+          <button
+            type="button"
+            onClick={() => fileInputRef.current?.click()}
+            disabled={editingMessage !== null}
+            aria-label="Attach image"
+            title="Attach Image"
+            className="action-icon-btn"
+            style={{
+              color: selectedImageFile ? 'var(--accent-primary)' : 'var(--text-muted)',
+              opacity: editingMessage ? 0.4 : 1,
+              padding: '6px'
+            }}
+          >
+            <ImageIcon size={20} />
+          </button>
 
-        <input
-          type="text"
-          placeholder={editingMessage ? "Edit your message..." : selectedImageFile ? "Add an optional caption..." : "Type a message..."}
-          value={inputText}
-          onChange={handleInputChange}
-          disabled={isUploading}
-          style={{
-            flex: 1,
-            padding: '12px 18px',
-            background: 'var(--bg-primary)',
-            border: '1px solid var(--border-color)',
-            borderRadius: 'var(--radius-full)',
-            color: 'var(--text-primary)',
-            fontSize: '0.95rem',
-            outline: 'none'
-          }}
-        />
+          {/* Emoji Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowEmojiPicker(!showEmojiPicker);
+              setShowGifPicker(false);
+              setShowStickerPicker(false);
+            }}
+            aria-label="Insert Emoji"
+            title="Emojis"
+            className="action-icon-btn"
+            style={{
+              color: showEmojiPicker ? 'var(--accent-primary)' : 'var(--text-muted)',
+              padding: '6px'
+            }}
+          >
+            <Smile size={20} />
+          </button>
 
-        <button
-          type="submit"
-          disabled={isUploading || (!inputText.trim() && !selectedImageFile)}
-          className="btn-primary"
-          aria-label="Send message"
-          title="Send Message"
-          style={{
-            borderRadius: '50%',
-            width: '44px',
-            height: '44px',
-            padding: 0,
-            flexShrink: 0
-          }}
-        >
-          {isUploading ? <Loader2 size={18} className="animate-pulse" /> : <Send size={18} />}
-        </button>
+          {/* GIF Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowGifPicker(!showGifPicker);
+              setShowEmojiPicker(false);
+              setShowStickerPicker(false);
+            }}
+            aria-label="Insert GIF"
+            title="GIFs"
+            className="action-icon-btn"
+            style={{
+              color: showGifPicker ? 'var(--accent-primary)' : 'var(--text-muted)',
+              padding: '6px'
+            }}
+          >
+            <Film size={20} />
+          </button>
+
+          {/* Sticker Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowStickerPicker(!showStickerPicker);
+              setShowEmojiPicker(false);
+              setShowGifPicker(false);
+            }}
+            aria-label="Insert Sticker"
+            title="Stickers"
+            className="action-icon-btn"
+            style={{
+              color: showStickerPicker ? 'var(--accent-primary)' : 'var(--text-muted)',
+              padding: '6px'
+            }}
+          >
+            <Sparkles size={20} />
+          </button>
+
+          {/* Voice Note Mic Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setIsRecordingVoice(true);
+              setShowEmojiPicker(false);
+              setShowGifPicker(false);
+              setShowStickerPicker(false);
+            }}
+            aria-label="Voice Message"
+            title="Record Voice Note"
+            className="action-icon-btn"
+            style={{
+              color: isRecordingVoice ? 'var(--accent-primary)' : 'var(--text-muted)',
+              padding: '6px'
+            }}
+          >
+            <Mic size={20} />
+          </button>
+        </div>
+
+        {isRecordingVoice ? (
+          <VoiceRecorder
+            onSendVoiceMessage={handleSendVoiceMessage}
+            onCancelRecording={() => setIsRecordingVoice(false)}
+          />
+        ) : (
+          <>
+            <input
+              type="text"
+              placeholder={editingMessage ? "Edit your message..." : selectedImageFile ? "Add an optional caption..." : "Type a message..."}
+              value={inputText}
+              onChange={handleInputChange}
+              disabled={isUploading}
+              style={{
+                flex: 1,
+                padding: '12px 18px',
+                background: 'var(--bg-input)',
+                border: '1px solid var(--border-color)',
+                borderRadius: 'var(--radius-full)',
+                color: 'var(--text-primary)',
+                fontSize: '0.92rem',
+                outline: 'none',
+                transition: 'border-color var(--transition-fast)'
+              }}
+            />
+
+            <button
+              type="submit"
+              disabled={isUploading || (!inputText.trim() && !selectedImageFile)}
+              className="btn-primary"
+              aria-label="Send message"
+              title="Send Message"
+              style={{
+                borderRadius: '50%',
+                width: '44px',
+                height: '44px',
+                padding: 0,
+                flexShrink: 0
+              }}
+            >
+              {isUploading ? <RaabtaLoader variant="button" /> : <Send size={18} />}
+            </button>
+          </>
+        )}
       </form>
 
       {/* Lightbox Modal for Full Image View */}
@@ -1111,7 +1377,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             right: 0,
             bottom: 0,
             background: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(8px)',
+            backdropFilter: 'blur(12px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1147,7 +1413,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             style={{
               maxWidth: '90vw',
               maxHeight: '90vh',
-              borderRadius: '12px',
+              borderRadius: '16px',
               objectFit: 'contain',
               boxShadow: 'var(--shadow-lg)'
             }}
