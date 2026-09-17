@@ -1,9 +1,19 @@
 import axios from 'axios';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+const getApiBaseUrl = () => {
+  const hostname = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
+  let envUrl = import.meta.env.VITE_API_URL;
+  if (envUrl) {
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && envUrl.includes('localhost')) {
+      return envUrl.replace('localhost', hostname);
+    }
+    return envUrl;
+  }
+  return `http://${hostname}:5000/api`;
+};
 
 const api = axios.create({
-  baseURL: API_BASE_URL,
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json'
   }
@@ -26,8 +36,12 @@ api.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response && error.response.status === 401) {
-      // Clear token if unauthorized / token expired
-      localStorage.removeItem('chat_token');
+      const requestUrl = error.config?.url || '';
+      const isPublicAuthRoute = /\/(auth\/|users\/check-username|users\/profile\/)/.test(requestUrl);
+      if (!isPublicAuthRoute) {
+        // Clear token only if unauthorized on a protected route / token expired
+        localStorage.removeItem('chat_token');
+      }
     }
     return Promise.reject(error);
   }

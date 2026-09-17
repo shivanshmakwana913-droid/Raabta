@@ -24,9 +24,12 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
       } catch (err) {
         console.error('[Auth Restore Error]:', err.response?.data?.message || err.message);
-        localStorage.removeItem('chat_token');
+        // Only clear token if authentication explicitly failed (401), not on temporary DB 503 errors
+        if (err.response?.status === 401) {
+          localStorage.removeItem('chat_token');
+          setToken(null);
+        }
         setUser(null);
-        setToken(null);
       } finally {
         setLoading(false);
       }

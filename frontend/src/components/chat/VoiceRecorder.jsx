@@ -134,15 +134,37 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancelRecording })
 
   if (permissionError) {
     return (
-      <div className="w-full py-2 px-4 bg-rose-50 dark:bg-rose-950/40 border border-rose-200 dark:border-rose-900/60 rounded-xl flex items-center justify-between gap-3 text-xs">
-        <div className="flex items-center space-x-2 text-rose-700 dark:text-rose-300">
-          <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+      <div
+        style={{
+          width: '100%',
+          padding: '10px 14px',
+          background: 'rgba(239, 68, 68, 0.12)',
+          border: '1px solid rgba(239, 68, 68, 0.3)',
+          borderRadius: '16px',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: '12px',
+          fontSize: '0.82rem',
+          color: '#f87171'
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <AlertTriangle size={18} style={{ flexShrink: 0 }} />
           <span>Microphone access required. Please allow microphone permission in your browser.</span>
         </div>
         <button
           type="button"
           onClick={onCancelRecording}
-          className="px-2.5 py-1 bg-rose-600 text-white font-semibold rounded-lg hover:bg-rose-700 transition-colors"
+          style={{
+            padding: '4px 12px',
+            background: '#ef4444',
+            color: '#ffffff',
+            fontWeight: 600,
+            borderRadius: '8px',
+            border: 'none',
+            cursor: 'pointer'
+          }}
         >
           Close
         </button>
@@ -151,50 +173,128 @@ export default function VoiceRecorder({ onSendVoiceMessage, onCancelRecording })
   }
 
   return (
-    <div className="w-full flex items-center justify-between gap-4 py-1.5 px-3 bg-red-50/60 dark:bg-red-950/30 border border-red-200/60 dark:border-red-900/40 rounded-full animate-in fade-in duration-200">
-      {/* Recording indicator & timer */}
-      <div className="flex items-center space-x-3">
-        <div className="relative flex items-center justify-center">
-          <span className="animate-ping absolute inline-flex h-3 w-3 rounded-full bg-red-500 opacity-75" />
-          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-red-600" />
+    <div
+      style={{
+        flex: 1,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        gap: '12px',
+        padding: '6px 14px',
+        background: 'var(--bg-tertiary)',
+        border: '1px solid var(--accent-primary)',
+        borderRadius: '24px',
+        boxShadow: 'var(--shadow-sm)',
+        position: 'relative',
+        overflow: 'hidden'
+      }}
+    >
+      {/* Live recording pulse & timer */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <span
+            style={{
+              position: 'absolute',
+              width: '12px',
+              height: '12px',
+              borderRadius: '50%',
+              background: '#ef4444',
+              animation: 'pulseRing 1.5s infinite ease-in-out',
+              opacity: 0.8
+            }}
+          />
+          <span
+            style={{
+              width: '8px',
+              height: '8px',
+              borderRadius: '50%',
+              background: '#ef4444'
+            }}
+          />
         </div>
-        <div className="flex items-center space-x-2">
-          <Mic className="w-4 h-4 text-red-600 dark:text-red-400" />
-          <span className="font-mono font-semibold text-xs text-red-700 dark:text-red-300">
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <Mic size={16} style={{ color: '#ef4444' }} />
+          <span style={{ fontFamily: 'monospace', fontWeight: 700, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
             {formatTimer(recordingTime)}
           </span>
         </div>
+
+        {/* Live Audio Visualizer Bars Animation */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', height: '18px' }}>
+          {[12, 20, 16, 24, 10, 22, 14, 18].map((h, i) => (
+            <span
+              key={i}
+              style={{
+                width: '3px',
+                height: `${h}px`,
+                background: '#ef4444',
+                borderRadius: '2px',
+                animation: `shimmer ${0.6 + i * 0.15}s infinite ease-in-out alternate`
+              }}
+            />
+          ))}
+        </div>
+
         {uploadError && (
-          <span className="text-xs text-rose-600 font-medium truncate max-w-[150px]">
+          <span style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500, maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {uploadError}
           </span>
         )}
       </div>
 
-      {/* Action buttons */}
-      <div className="flex items-center space-x-2">
+      {/* Cancel and Send action controls */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
         <button
           type="button"
           onClick={handleCancel}
           disabled={isUploading}
-          className="p-2 rounded-full text-zinc-500 hover:text-red-600 hover:bg-zinc-200/60 dark:hover:bg-zinc-800 transition-colors"
           title="Cancel recording"
+          style={{
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: 'none',
+            color: '#ef4444',
+            width: '34px',
+            height: '34px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: 'pointer',
+            transition: 'transform 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
-          <Trash2 className="w-4 h-4" />
+          <Trash2 size={16} />
         </button>
 
         <button
           type="button"
           onClick={handleSend}
           disabled={isUploading || recordingTime < 1}
-          className="p-2.5 rounded-full bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 transition-colors flex items-center justify-center shadow-sm"
           title="Send voice note"
+          style={{
+            background: 'var(--accent-gradient)',
+            border: 'none',
+            color: '#ffffff',
+            width: '36px',
+            height: '36px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            cursor: recordingTime < 1 || isUploading ? 'not-allowed' : 'pointer',
+            opacity: recordingTime < 1 || isUploading ? 0.5 : 1,
+            boxShadow: 'var(--accent-shadow)',
+            transition: 'transform 0.15s ease'
+          }}
+          onMouseEnter={(e) => {
+            if (recordingTime >= 1 && !isUploading) e.currentTarget.style.transform = 'scale(1.08)';
+          }}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
         >
-          {isUploading ? (
-            <Loader2 className="w-4 h-4 animate-spin" />
-          ) : (
-            <Send className="w-4 h-4" />
-          )}
+          {isUploading ? <Loader2 size={18} className="animate-spin" /> : <Send size={16} />}
         </button>
       </div>
     </div>

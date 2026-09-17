@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, Video, Download } from 'lucide-react';
 import api from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
+import { useCall } from '../../context/CallContext';
 import { formatTime, formatLastSeen } from '../../utils/dateFormatter';
 import GroupInfoModal from '../group/GroupInfoModal';
 import { ChatSkeleton, RaabtaLoader } from '../common/RaabtaLoader';
@@ -10,6 +11,7 @@ import StickerPicker from './StickerPicker';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import VoiceMessage from './VoiceMessage';
 import VoiceRecorder from './VoiceRecorder';
+import { playSendMessageSound, playReceiveMessageSound, toggleSoundMute, getIsSoundMuted } from '../../utils/soundEffects';
 
 const ALLOWED_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
 
@@ -19,6 +21,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
   const [loading, setLoading] = useState(true);
   const [typingUsers, setTypingUsers] = useState({});
   const [isGroupInfoOpen, setIsGroupInfoOpen] = useState(false);
+
+  const { startCall } = useCall();
 
   // Reply, Edit, React States
   const [replyingToMessage, setReplyingToMessage] = useState(null);
@@ -34,6 +38,9 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   // Lightbox full image preview modal
   const [fullImageViewUrl, setFullImageViewUrl] = useState(null);
+
+  // Audio Sound state
+  const [isMuted, setIsMuted] = useState(getIsSoundMuted());
 
   // Media Pickers & Voice States (GIFs, Stickers, Emojis, Voice)
   const [showGifPicker, setShowGifPicker] = useState(false);
@@ -53,12 +60,15 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const isGroup = conversation.type === 'group';
 
-  // Recipient for 1-on-1 direct chat
+  // Recipient for 1-on-1 direct chat (robust against populated objects or raw ID strings)
   const recipient = isGroup
     ? null
-    : conversation.participants?.find(
-        (p) => p._id.toString() !== currentUser._id.toString()
-      ) || conversation.participants?.[0] || {};
+    : conversation.participants?.find((p) => {
+        if (!p) return false;
+        const pId = typeof p === 'object' ? (p._id || p.id) : p;
+        const myId = currentUser?._id || currentUser?.id;
+        return pId && myId && pId.toString() !== myId.toString();
+      }) || (typeof conversation.participants?.[0] === 'object' ? conversation.participants?.[0] : {});
 
   const headerName = isGroup ? conversation.groupName || 'Group Chat' : recipient?.name || recipient?.username;
   const headerAvatar = isGroup
@@ -67,6 +77,31 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
+  };
+
+  // Download media helper (images, GIFs, videos)
+  const handleDownloadMedia = async (url, customName = 'raabta_media') => {
+    if (!url) return;
+    try {
+      const response = await fetch(url);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      const urlExt = url.split('.').pop()?.split('?')[0]?.split('#')[0];
+      const extension = urlExt && urlExt.length < 5 ? urlExt : (blob.type.split('/')[1] || 'png');
+      a.download = customName.includes('.') ? customName : `${customName}_${Date.now()}.${extension}`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 10000);
+    } catch {
+      const a = document.createElement('a');
+      a.href = url;
+      a.target = '_blank';
+      a.download = customName;
+      a.click();
+    }
   };
 
   // Scroll event handler to track distance from bottom
@@ -181,6 +216,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           if (prev.some((m) => m._id === newMessage._id)) return prev;
           return [...prev, newMessage];
         });
+
+        // Play sound if message is from another user
+        const senderId = typeof newMessage.sender === 'object' ? newMessage.sender?._id : newMessage.sender;
+        if (senderId && senderId.toString() !== currentUser._id.toString()) {
+          playReceiveMessageSound();
+        }
 
         socket.emit('mark_messages_seen', { conversationId: conversation._id });
         if (onMarkConversationSeen) {
@@ -377,6 +418,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       replyTo: replyingToMessage?._id || null
     };
 
+    playSendMessageSound();
+
     if (socket) {
       socket.emit('send_message', payload, (res) => {
         if (res && res.status === 'ok') {
@@ -414,6 +457,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const handleSelectGif = async (gifUrl, gifTitle) => {
     setShowGifPicker(false);
+    playSendMessageSound();
     const payload = {
       conversationId: conversation._id,
       content: gifTitle || 'GIF',
@@ -444,6 +488,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const handleSelectSticker = async (stickerUrl, stickerName) => {
     setShowStickerPicker(false);
+    playSendMessageSound();
     const payload = {
       conversationId: conversation._id,
       content: stickerName || 'Sticker',
@@ -478,6 +523,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const handleSendVoiceMessage = async ({ audioUrl, duration }) => {
     setIsRecordingVoice(false);
+    playSendMessageSound();
     const payload = {
       conversationId: conversation._id,
       content: 'Voice message',
@@ -622,13 +668,54 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           </div>
         </div>
 
+        <button
+          onClick={() => {
+            const muted = toggleSoundMute();
+            setIsMuted(muted);
+          }}
+          aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+          title={isMuted ? "Unmute Message Sounds" : "Mute Message Sounds"}
+          className="action-icon-btn"
+        >
+          {isMuted ? <VolumeX size={19} style={{ color: 'var(--text-muted)' }} /> : <Volume2 size={19} style={{ color: 'var(--accent-primary)' }} />}
+        </button>
+
+        {!isGroup && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+            <button
+              onClick={() => {
+                const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
+                startCall({ conversationId: conversation._id, targetUser: target, callType: 'audio' });
+              }}
+              aria-label="Start Audio Call"
+              title="Start Audio Call"
+              className="action-icon-btn"
+              style={{ flexShrink: 0 }}
+            >
+              <Phone size={19} style={{ color: '#10b981' }} />
+            </button>
+            <button
+              onClick={() => {
+                const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
+                startCall({ conversationId: conversation._id, targetUser: target, callType: 'video' });
+              }}
+              aria-label="Start Video Call"
+              title="Start Video Call"
+              className="action-icon-btn"
+              style={{ flexShrink: 0 }}
+            >
+              <Video size={19} style={{ color: '#a855f7' }} />
+            </button>
+          </div>
+        )}
+
         {!isGroup && recipient && onRequestReport && (
           <button
             onClick={() => onRequestReport({ user: recipient, message: null })}
             aria-label="Report user"
             title="Report User"
             className="action-icon-btn"
-            style={{ color: '#f87171' }}
+            style={{ color: '#f87171', flexShrink: 0 }}
           >
             <Flag size={18} />
           </button>
@@ -921,6 +1008,33 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                             display: 'block'
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadMedia(msg.imageUrl, msg.content || 'raabta_gif');
+                          }}
+                          title="Save GIF to device"
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'rgba(0, 0, 0, 0.65)',
+                            backdropFilter: 'blur(4px)',
+                            border: 'none',
+                            color: '#ffffff',
+                            borderRadius: '50%',
+                            width: '30px',
+                            height: '30px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 2
+                          }}
+                        >
+                          <Download size={14} />
+                        </button>
                         <span style={{
                           position: 'absolute',
                           bottom: '8px',
@@ -957,11 +1071,50 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                             display: 'block'
                           }}
                         />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDownloadMedia(msg.imageUrl, msg.content || 'raabta_image');
+                          }}
+                          title="Save Image to device"
+                          style={{
+                            position: 'absolute',
+                            top: '8px',
+                            right: '8px',
+                            background: 'rgba(0, 0, 0, 0.65)',
+                            backdropFilter: 'blur(4px)',
+                            border: 'none',
+                            color: '#ffffff',
+                            borderRadius: '50%',
+                            width: '30px',
+                            height: '30px',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            cursor: 'pointer',
+                            zIndex: 2
+                          }}
+                        >
+                          <Download size={14} />
+                        </button>
                         {msg.content && (
                           <div style={{ padding: '8px 10px 4px 10px', fontSize: '0.9rem', color: isMe ? '#ffffff' : 'var(--text-primary)' }}>
                             {msg.content}
                           </div>
                         )}
+                      </div>
+                    ) : msg.messageType === 'call' ? (
+                      /* Call Message View */
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 4px' }}>
+                        {msg.callType === 'video' ? (
+                          <Video size={18} style={{ color: msg.callStatus === 'missed' ? '#ef4444' : '#a855f7' }} />
+                        ) : (
+                          <Phone size={18} style={{ color: msg.callStatus === 'missed' ? '#ef4444' : '#10b981' }} />
+                        )}
+                        <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
+                          {msg.content || `${msg.callType === 'video' ? 'Video' : 'Audio'} call`}
+                        </span>
                       </div>
                     ) : (
                       /* Text Message View */
@@ -1207,7 +1360,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         onSubmit={handleSubmitMessage}
         className="chat-input-container"
         style={{
-          padding: '14px 20px',
+          padding: '12px 16px',
           background: 'var(--bg-secondary)',
           borderTop: '1px solid var(--border-color)',
           display: 'flex',
@@ -1218,20 +1371,20 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       >
         <input
           type="file"
-          accept="image/jpeg,image/png,image/webp,image/jpg"
+          accept="image/*,video/*"
           ref={fileInputRef}
           onChange={handleFileSelect}
           style={{ display: 'none' }}
         />
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
-          {/* Attach Image */}
+        <div className="chat-action-icons-group" style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+          {/* Attach Image/Video */}
           <button
             type="button"
             onClick={() => fileInputRef.current?.click()}
             disabled={editingMessage !== null}
-            aria-label="Attach image"
-            title="Attach Image"
+            aria-label="Attach media"
+            title="Attach Image / Video"
             className="action-icon-btn"
             style={{
               color: selectedImageFile ? 'var(--accent-primary)' : 'var(--text-muted)',
@@ -1271,7 +1424,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             }}
             aria-label="Insert GIF"
             title="GIFs"
-            className="action-icon-btn"
+            className="action-icon-btn hide-on-xs"
             style={{
               color: showGifPicker ? 'var(--accent-primary)' : 'var(--text-muted)',
               padding: '6px'
@@ -1290,7 +1443,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             }}
             aria-label="Insert Sticker"
             title="Stickers"
-            className="action-icon-btn"
+            className="action-icon-btn hide-on-xs"
             style={{
               color: showStickerPicker ? 'var(--accent-primary)' : 'var(--text-muted)',
               padding: '6px'
@@ -1329,12 +1482,14 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           <>
             <input
               type="text"
+              className="chat-input-field"
               placeholder={editingMessage ? "Edit your message..." : selectedImageFile ? "Add an optional caption..." : "Type a message..."}
               value={inputText}
               onChange={handleInputChange}
               disabled={isUploading}
               style={{
                 flex: 1,
+                minWidth: 0,
                 padding: '12px 18px',
                 background: 'var(--bg-input)',
                 border: '1px solid var(--border-color)',
@@ -1349,15 +1504,22 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             <button
               type="submit"
               disabled={isUploading || (!inputText.trim() && !selectedImageFile)}
-              className="btn-primary"
+              className="btn-primary send-button"
               aria-label="Send message"
               title="Send Message"
               style={{
                 borderRadius: '50%',
                 width: '44px',
                 height: '44px',
+                minWidth: '44px',
+                minHeight: '44px',
                 padding: 0,
-                flexShrink: 0
+                flexShrink: 0,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                background: (inputText.trim() || selectedImageFile) ? 'var(--accent-gradient)' : undefined,
+                boxShadow: (inputText.trim() || selectedImageFile) ? 'var(--accent-shadow)' : undefined
               }}
             >
               {isUploading ? <RaabtaLoader variant="button" /> : <Send size={18} />}
@@ -1376,8 +1538,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             left: 0,
             right: 0,
             bottom: 0,
-            background: 'rgba(0, 0, 0, 0.88)',
-            backdropFilter: 'blur(12px)',
+            background: 'rgba(0, 0, 0, 0.92)',
+            backdropFilter: 'blur(16px)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
@@ -1385,37 +1547,78 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             padding: '20px'
           }}
         >
-          <button
-            onClick={() => setFullImageViewUrl(null)}
-            aria-label="Close image preview"
-            title="Close"
+          <div
+            onClick={(e) => e.stopPropagation()}
             style={{
               position: 'absolute',
               top: '20px',
               right: '20px',
-              background: 'rgba(255, 255, 255, 0.2)',
-              border: 'none',
-              color: '#fff',
-              borderRadius: '50%',
-              width: '40px',
-              height: '40px',
               display: 'flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer'
+              gap: '12px',
+              zIndex: 2001
             }}
           >
-            <X size={24} />
-          </button>
+            <button
+              onClick={() => handleDownloadMedia(fullImageViewUrl, 'raabta_attachment')}
+              aria-label="Download media"
+              title="Download to device"
+              style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: '50%',
+                width: '42px',
+                height: '42px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <Download size={20} />
+            </button>
+
+            <button
+              onClick={() => setFullImageViewUrl(null)}
+              aria-label="Close image preview"
+              title="Close"
+              style={{
+                background: 'rgba(255, 255, 255, 0.25)',
+                border: 'none',
+                color: '#fff',
+                borderRadius: '50%',
+                width: '42px',
+                height: '42px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                backdropFilter: 'blur(8px)',
+                boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+                transition: 'transform 0.15s ease'
+              }}
+              onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.1)'}
+              onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
+            >
+              <X size={22} />
+            </button>
+          </div>
+
           <img
             src={fullImageViewUrl}
             alt="Full view"
             style={{
-              maxWidth: '90vw',
-              maxHeight: '90vh',
+              maxWidth: '92vw',
+              maxHeight: '88vh',
               borderRadius: '16px',
               objectFit: 'contain',
-              boxShadow: 'var(--shadow-lg)'
+              boxShadow: '0 8px 32px rgba(0,0,0,0.5)'
             }}
           />
         </div>

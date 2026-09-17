@@ -38,8 +38,12 @@ const registerUser = async (req, res, next) => {
     }
 
     // Check if username exists (case-insensitive)
+    const escapedUsername = normalizedUsername.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const usernameExists = await User.findOne({
-      $or: [{ normalizedUsername }, { username: normalizedUsername }]
+      $or: [
+        { normalizedUsername },
+        { username: { $regex: `^${escapedUsername}$`, $options: 'i' } }
+      ]
     });
     if (usernameExists) {
       res.status(400);
@@ -84,17 +88,7 @@ const registerUser = async (req, res, next) => {
       const token = generateToken(user._id);
       res.status(201).json({
         token,
-        user: {
-          _id: user._id,
-          name: user.name,
-          username: user.username,
-          email: user.email,
-          avatar: user.avatar,
-          phoneNumberVerified: user.phoneNumberVerified,
-          isOnline: user.isOnline,
-          lastSeen: user.lastSeen,
-          createdAt: user.createdAt
-        }
+        user: user.toAuthJSON()
       });
     } else {
       res.status(400);
@@ -131,12 +125,13 @@ const loginUser = async (req, res, next) => {
 
     const identifier = rawIdentifier.trim().toLowerCase();
 
-    // Find user by email or normalized username
+    // Find user by email or normalized username (case-insensitive fallback)
+    const escapedIdentifier = identifier.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const user = await User.findOne({
       $or: [
         { email: identifier },
         { normalizedUsername: identifier },
-        { username: identifier }
+        { username: { $regex: `^${escapedIdentifier}$`, $options: 'i' } }
       ]
     }).select('+password');
 
@@ -155,17 +150,7 @@ const loginUser = async (req, res, next) => {
 
     res.status(200).json({
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar,
-        phoneNumberVerified: user.phoneNumberVerified,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-        createdAt: user.createdAt
-      }
+      user: user.toAuthJSON()
     });
   } catch (error) {
     next(error);
@@ -235,17 +220,7 @@ const verifyPhoneLoginOtp = async (req, res, next) => {
 
     res.status(200).json({
       token,
-      user: {
-        _id: user._id,
-        name: user.name,
-        username: user.username,
-        email: user.email,
-        avatar: user.avatar,
-        phoneNumberVerified: user.phoneNumberVerified,
-        isOnline: user.isOnline,
-        lastSeen: user.lastSeen,
-        createdAt: user.createdAt
-      }
+      user: user.toAuthJSON()
     });
   } catch (error) {
     next(error);
@@ -257,7 +232,8 @@ const verifyPhoneLoginOtp = async (req, res, next) => {
 // @access  Private
 const getMe = async (req, res, next) => {
   try {
-    res.status(200).json({ user: req.user });
+    const userObj = typeof req.user.toAuthJSON === 'function' ? req.user.toAuthJSON() : req.user;
+    res.status(200).json({ user: userObj });
   } catch (error) {
     next(error);
   }

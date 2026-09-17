@@ -20,7 +20,7 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'gif', 'sticker', 'audio'],
+      enum: ['text', 'image', 'gif', 'sticker', 'audio', 'call'],
       default: 'text'
     },
     imageUrl: {
@@ -36,6 +36,20 @@ const messageSchema = new mongoose.Schema(
       default: null
     },
     audioDuration: {
+      type: Number,
+      default: 0
+    },
+    callType: {
+      type: String,
+      enum: ['audio', 'video'],
+      default: null
+    },
+    callStatus: {
+      type: String,
+      enum: ['ended', 'missed', 'declined', 'busy', 'failed'],
+      default: null
+    },
+    callDuration: {
       type: Number,
       default: 0
     },

@@ -22,8 +22,15 @@ const LoginPage = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
 
-  const { login, sendPhoneLoginOtp, verifyPhoneLoginOtp } = useAuth();
+  const { user, loading, login, sendPhoneLoginOtp, verifyPhoneLoginOtp } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   // Countdown timer for OTP resend
   useEffect(() => {

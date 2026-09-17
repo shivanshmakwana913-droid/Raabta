@@ -126,6 +126,25 @@ userSchema.methods.matchPassword = async function (enteredPassword) {
   return await bcrypt.compare(enteredPassword, this.password);
 };
 
+// Method to serialize standard complete user object for Auth & Profile responses
+userSchema.methods.toAuthJSON = function () {
+  return {
+    _id: this._id,
+    name: this.name,
+    username: this.username,
+    email: this.email,
+    avatar: this.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${this.username}`,
+    bio: this.bio || '',
+    privacySettings: this.privacySettings || { lastSeen: 'everyone', onlineStatus: 'everyone', profile: 'everyone' },
+    blockedUsers: this.blockedUsers || [],
+    phoneNumberVerified: Boolean(this.phoneNumberVerified),
+    isOnline: Boolean(this.isOnline),
+    lastSeen: this.lastSeen,
+    createdAt: this.createdAt,
+    updatedAt: this.updatedAt
+  };
+};
+
 // Helper to normalize phone numbers (E.164 format e.g. +1234567890)
 userSchema.statics.normalizePhoneNumber = function (phone) {
   if (!phone) return null;

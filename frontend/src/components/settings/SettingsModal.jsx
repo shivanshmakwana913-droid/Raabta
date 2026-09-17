@@ -1,21 +1,28 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   X, User, Lock, Shield, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2,
-  Eye, LogOut, UserX, AtSign, Smile, Mail, Phone, KeyRound, Check
+  Eye, LogOut, UserX, AtSign, Smile, Mail, Phone, KeyRound, Check, Camera, Mic, Video, ShieldCheck
 } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { RaabtaLoader } from '../common/RaabtaLoader';
+import { requestMediaPermissions } from '../../utils/mediaPermissions';
 
 const SettingsModal = ({ onClose }) => {
   const { user, setUser, logout } = useAuth();
+  const avatarFileInputRef = useRef(null);
   const [activeTab, setActiveTab] = useState('account'); // 'account' | 'security' | 'privacy' | 'danger'
+
+  // --- Media Permissions State ---
+  const [permissionStatus, setPermissionStatus] = useState(null);
+  const [isTestingPermissions, setIsTestingPermissions] = useState(false);
 
   // --- Account State ---
   const [name, setName] = useState(user?.name || '');
   const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   const [usernameStatus, setUsernameStatus] = useState('available');
   const [usernameMessage, setUsernameMessage] = useState('Current username');
@@ -147,7 +154,7 @@ const SettingsModal = ({ onClose }) => {
         setUsernameMessage(data.message);
       } catch (err) {
         setUsernameStatus('invalid');
-        setUsernameMessage('Could not check username');
+        setUsernameMessage(err.response?.data?.message || err.message || 'Could not check username');
       } finally {
         setIsCheckingUsername(false);
       }
@@ -157,6 +164,51 @@ const SettingsModal = ({ onClose }) => {
   }, [username, user?.username]);
 
   // --- Handlers ---
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMsg('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMsg('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      clearAlerts();
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const { data } = await api.post('/users/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setAvatar(data.avatar);
+      if (data.user) {
+        setUser(data.user);
+      }
+      setSuccessMsg('Profile photo uploaded successfully!');
+      setTimeout(clearAlerts, 3000);
+    } catch (err) {
+      setErrorMsg(err.response?.data?.message || 'Failed to upload profile photo');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
+
+  const handleTestMediaPermissions = async () => {
+    setIsTestingPermissions(true);
+    setPermissionStatus(null);
+    const res = await requestMediaPermissions({ audio: true, video: true });
+    setPermissionStatus(res);
+    setIsTestingPermissions(false);
+  };
+
   const handleRandomizeAvatar = () => {
     const randomSeed = Math.random().toString(36).substring(7);
     setAvatar(`https://api.dicebear.com/7.x/bottts/svg?seed=${randomSeed}`);
@@ -497,22 +549,44 @@ const SettingsModal = ({ onClose }) => {
                       src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                       alt="Avatar"
                       style={{
-                        width: '88px',
-                        height: '88px',
+                        width: '96px',
+                        height: '96px',
                         borderRadius: '50%',
                         objectFit: 'cover',
                         border: '3px solid var(--accent-primary)',
                         boxShadow: '0 4px 16px var(--accent-glow)'
                       }}
                     />
+                    <input
+                      type="file"
+                      ref={avatarFileInputRef}
+                      onChange={handleAvatarFileChange}
+                      accept="image/*"
+                      style={{ display: 'none' }}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => avatarFileInputRef.current?.click()}
+                      disabled={isUploadingAvatar}
+                      title="Upload Profile Photo from device"
+                      style={{
+                        position: 'absolute', bottom: 0, left: '-4px',
+                        background: 'var(--accent-gradient)', border: '2px solid var(--bg-surface)',
+                        color: '#fff', width: '32px', height: '32px',
+                        borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                        cursor: 'pointer', boxShadow: 'var(--shadow-sm)'
+                      }}
+                    >
+                      <Camera size={15} />
+                    </button>
                     <button
                       type="button"
                       onClick={handleRandomizeAvatar}
-                      title="Generate Avatar"
+                      title="Generate Random Avatar"
                       style={{
-                        position: 'absolute', bottom: 0, right: 0,
-                        background: 'var(--accent-gradient)', border: 'none',
-                        color: '#fff', width: '30px', height: '30px',
+                        position: 'absolute', bottom: 0, right: '-4px',
+                        background: 'var(--bg-card)', border: '2px solid var(--accent-primary)',
+                        color: 'var(--accent-primary)', width: '32px', height: '32px',
                         borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
                         cursor: 'pointer', boxShadow: 'var(--shadow-sm)'
                       }}
@@ -520,6 +594,11 @@ const SettingsModal = ({ onClose }) => {
                       <RefreshCw size={14} />
                     </button>
                   </div>
+                  {isUploadingAvatar && (
+                    <span style={{ fontSize: '0.78rem', color: 'var(--accent-primary)', fontWeight: '600' }}>
+                      Uploading profile photo...
+                    </span>
+                  )}
                 </div>
 
                 <div>
@@ -598,6 +677,67 @@ const SettingsModal = ({ onClose }) => {
                   {accountSubmitting ? <RaabtaLoader variant="button" /> : <><Save size={16} /> Save Profile Changes</>}
                 </button>
               </form>
+
+              {/* Media Permissions Card */}
+              <div style={{
+                borderTop: '1px solid var(--border-color)',
+                paddingTop: '20px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <h4 style={{ fontSize: '0.98rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <ShieldCheck size={18} color="#10b981" /> Browser Media Permissions
+                  </h4>
+                  <span style={{ fontSize: '0.75rem', padding: '3px 9px', borderRadius: '12px', background: 'var(--bg-input)', color: '#34d399', border: '1px solid var(--border-color)' }}>
+                    Call Setup
+                  </span>
+                </div>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.4 }}>
+                  Enable Microphone and Camera permissions in advance so Audio & Video calls connect instantly without browser prompts during calls.
+                </p>
+
+                {permissionStatus && (
+                  <div style={{
+                    padding: '12px 14px',
+                    borderRadius: '12px',
+                    fontSize: '0.84rem',
+                    background: permissionStatus.success ? 'rgba(16, 185, 129, 0.12)' : 'rgba(239, 68, 68, 0.12)',
+                    border: `1px solid ${permissionStatus.success ? 'rgba(16, 185, 129, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`,
+                    color: permissionStatus.success ? '#34d399' : '#f87171',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px'
+                  }}>
+                    {permissionStatus.success ? <CheckCircle2 size={18} /> : <AlertCircle size={18} />}
+                    <span>{permissionStatus.success ? '✓ Microphone & Camera permissions granted successfully!' : permissionStatus.error}</span>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={handleTestMediaPermissions}
+                  disabled={isTestingPermissions}
+                  style={{
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--accent-primary)',
+                    color: 'var(--accent-primary)',
+                    fontWeight: '600',
+                    fontSize: '0.88rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    cursor: 'pointer',
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {isTestingPermissions ? <RaabtaLoader variant="button" /> : <><Mic size={16} /><Video size={16} /> Request / Verify Mic & Camera Access</>}
+                </button>
+              </div>
 
               {/* Phone Identity Section */}
               <div style={{

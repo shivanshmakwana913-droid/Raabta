@@ -1,16 +1,18 @@
-import { useState, useEffect } from 'react';
-import { X, User, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, AtSign } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { X, User, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, AtSign, Camera, Upload } from 'lucide-react';
 import api from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { RaabtaLoader } from '../common/RaabtaLoader';
 
 const ProfileModal = ({ onClose }) => {
   const { user, setUser } = useAuth();
+  const avatarFileInputRef = useRef(null);
 
   const [name, setName] = useState(user?.name || '');
   const [username, setUsername] = useState(user?.username || '');
   const [bio, setBio] = useState(user?.bio || '');
   const [avatar, setAvatar] = useState(user?.avatar || '');
+  const [isUploadingAvatar, setIsUploadingAvatar] = useState(false);
 
   // Username availability checking states
   const [usernameStatus, setUsernameStatus] = useState('available'); // 'available' | 'unavailable' | 'invalid'
@@ -77,7 +79,7 @@ const ProfileModal = ({ onClose }) => {
         setUsernameMessage(data.message);
       } catch (err) {
         setUsernameStatus('invalid');
-        setUsernameMessage('Could not verify username');
+        setUsernameMessage(err.response?.data?.message || err.message || 'Could not verify username');
       } finally {
         setIsCheckingUsername(false);
       }
@@ -85,6 +87,44 @@ const ProfileModal = ({ onClose }) => {
 
     return () => clearTimeout(timer);
   }, [username, user?.username]);
+
+  // Upload Avatar File from device
+  const handleAvatarFileChange = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setErrorMessage('Please select a valid image file');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      setErrorMessage('Image size must be less than 5MB');
+      return;
+    }
+
+    try {
+      setIsUploadingAvatar(true);
+      setErrorMessage('');
+      const formData = new FormData();
+      formData.append('avatar', file);
+
+      const { data } = await api.post('/users/avatar', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+
+      setAvatar(data.avatar);
+      if (data.user) {
+        setUser(data.user);
+      }
+      setSuccessMessage('Profile photo uploaded!');
+      setTimeout(() => setSuccessMessage(''), 3000);
+    } catch (err) {
+      setErrorMessage(err.response?.data?.message || 'Failed to upload profile photo');
+    } finally {
+      setIsUploadingAvatar(false);
+    }
+  };
 
   // Preset dicebear avatar generator
   const handleRandomizeAvatar = () => {
@@ -216,14 +256,45 @@ const ProfileModal = ({ onClose }) => {
                 src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                 alt="Avatar Preview"
                 style={{
-                  width: '88px',
-                  height: '88px',
+                  width: '96px',
+                  height: '96px',
                   borderRadius: '50%',
                   objectFit: 'cover',
                   border: '3px solid var(--accent-primary)',
                   boxShadow: '0 4px 16px var(--accent-glow)'
                 }}
               />
+              <input
+                type="file"
+                ref={avatarFileInputRef}
+                onChange={handleAvatarFileChange}
+                accept="image/*"
+                style={{ display: 'none' }}
+              />
+              <button
+                type="button"
+                onClick={() => avatarFileInputRef.current?.click()}
+                disabled={isUploadingAvatar}
+                title="Upload Profile Photo from device"
+                style={{
+                  position: 'absolute',
+                  bottom: '0',
+                  left: '-4px',
+                  background: 'var(--accent-gradient)',
+                  border: '2px solid var(--bg-surface)',
+                  color: '#fff',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+              >
+                <Camera size={15} />
+              </button>
               <button
                 type="button"
                 onClick={handleRandomizeAvatar}
@@ -231,12 +302,12 @@ const ProfileModal = ({ onClose }) => {
                 style={{
                   position: 'absolute',
                   bottom: '0',
-                  right: '0',
-                  background: 'var(--accent-gradient)',
-                  border: 'none',
-                  color: '#fff',
-                  width: '30px',
-                  height: '30px',
+                  right: '-4px',
+                  background: 'var(--bg-card)',
+                  border: '2px solid var(--accent-primary)',
+                  color: 'var(--accent-primary)',
+                  width: '32px',
+                  height: '32px',
                   borderRadius: '50%',
                   display: 'flex',
                   alignItems: 'center',
@@ -248,6 +319,11 @@ const ProfileModal = ({ onClose }) => {
                 <RefreshCw size={14} />
               </button>
             </div>
+            {isUploadingAvatar && (
+              <span style={{ fontSize: '0.78rem', color: 'var(--accent-primary)', fontWeight: 600 }}>
+                Uploading profile photo...
+              </span>
+            )}
 
             <div style={{ width: '100%', position: 'relative' }}>
               <label style={{ display: 'block', fontSize: '0.82rem', fontWeight: '600', color: 'var(--text-secondary)', marginBottom: '6px' }}>

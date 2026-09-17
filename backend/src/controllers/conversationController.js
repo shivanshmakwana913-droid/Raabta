@@ -92,7 +92,7 @@ const fetchConversations = async (req, res, next) => {
       .populate('groupAdmin', 'name username avatar')
       .populate({
         path: 'lastMessage',
-        select: 'content sender messageType imageUrl deliveredAt seenAt createdAt',
+        select: 'content sender messageType imageUrl audioUrl callType callStatus callDuration deliveredAt seenAt createdAt',
         populate: {
           path: 'sender',
           select: 'name username avatar'

@@ -27,8 +27,15 @@ const RegisterPage = () => {
   const [usernameMessage, setUsernameMessage] = useState('');
   const [isCheckingUsername, setIsCheckingUsername] = useState(false);
 
-  const { register } = useAuth();
+  const { user, loading, register } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect if already authenticated
+  useEffect(() => {
+    if (!loading && user) {
+      navigate('/', { replace: true });
+    }
+  }, [user, loading, navigate]);
 
   // Debounced live username availability check
   useEffect(() => {
@@ -63,8 +70,13 @@ const RegisterPage = () => {
         setUsernameStatus(data.status);
         setUsernameMessage(data.message);
       } catch (err) {
-        setUsernameStatus('invalid');
-        setUsernameMessage('Could not verify username');
+        if (err.response?.status === 503 || err.response?.data?.code === 'DATABASE_UNAVAILABLE') {
+          setUsernameStatus('db_unavailable');
+          setUsernameMessage(err.response?.data?.message || 'Database unavailable. Please try again shortly.');
+        } else {
+          setUsernameStatus('invalid');
+          setUsernameMessage(err.response?.data?.message || err.message || 'Could not verify username');
+        }
       } finally {
         setIsCheckingUsername(false);
       }
@@ -252,6 +264,8 @@ const RegisterPage = () => {
                     ? 'var(--text-muted)'
                     : usernameStatus === 'available'
                     ? '#10b981'
+                    : usernameStatus === 'db_unavailable'
+                    ? '#f59e0b'
                     : '#ef4444',
                   display: 'flex',
                   alignItems: 'center',
@@ -261,6 +275,8 @@ const RegisterPage = () => {
                     <RaabtaLoader variant="button" />
                   ) : usernameStatus === 'available' ? (
                     <>✓ {usernameMessage}</>
+                  ) : usernameStatus === 'db_unavailable' ? (
+                    <>⚠ {usernameMessage}</>
                   ) : (
                     <>✗ {usernameMessage}</>
                   )}
@@ -285,6 +301,8 @@ const RegisterPage = () => {
                       ? 'var(--border-color)'
                       : usernameStatus === 'available'
                       ? 'rgba(16, 185, 129, 0.5)'
+                      : usernameStatus === 'db_unavailable'
+                      ? 'rgba(245, 158, 11, 0.5)'
                       : 'rgba(239, 68, 68, 0.5)'
                   }`,
                   borderRadius: '14px',

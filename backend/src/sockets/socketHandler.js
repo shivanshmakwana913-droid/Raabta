@@ -11,8 +11,55 @@ const {
 
 // In-memory user connection tracking: userIdString -> Set(socketIds)
 const userSocketsMap = new Map();
+// In-memory active call tracking: callId -> callData
+const activeCallsMap = new Map();
 
 const initSocketServer = (io) => {
+  // Helper to log system call history messages
+  const saveCallHistoryMessage = async ({ conversationId, senderId, callType, callStatus, callDuration }) => {
+    try {
+      let content = '';
+      const isVideo = callType === 'video';
+      if (callStatus === 'ended') {
+        const minutes = Math.floor((callDuration || 0) / 60);
+        const seconds = (callDuration || 0) % 60;
+        const durationStr = minutes > 0 ? `${minutes}m ${seconds}s` : `${seconds}s`;
+        content = `${isVideo ? 'Video' : 'Audio'} call • ${durationStr}`;
+      } else if (callStatus === 'missed') {
+        content = `Missed ${isVideo ? 'video' : 'audio'} call`;
+      } else if (callStatus === 'declined') {
+        content = `${isVideo ? 'Video' : 'Audio'} call declined`;
+      } else if (callStatus === 'busy') {
+        content = `${isVideo ? 'Video' : 'Audio'} call • Line busy`;
+      } else {
+        content = `${isVideo ? 'Video' : 'Audio'} call`;
+      }
+
+      const message = await Message.create({
+        conversation: conversationId,
+        sender: senderId,
+        content,
+        messageType: 'call',
+        callType,
+        callStatus,
+        callDuration: callDuration || 0,
+        deliveredAt: new Date(),
+        seenAt: new Date()
+      });
+
+      await Conversation.findByIdAndUpdate(conversationId, {
+        lastMessage: message._id,
+        updatedAt: new Date()
+      });
+
+      const populatedMsg = await Message.findById(message._id).populate('sender', 'name username avatar');
+      io.to(conversationId.toString()).emit('receive_message', populatedMsg);
+      return populatedMsg;
+    } catch (err) {
+      console.error('[Save Call History Error]:', err.message);
+    }
+  };
+
   // Socket Authentication Middleware
   io.use(async (socket, next) => {
     try {
@@ -51,6 +98,18 @@ const initSocketServer = (io) => {
       userSocketsMap.set(userIdStr, new Set());
     }
     userSocketsMap.get(userIdStr).add(socket.id);
+
+    // Helper to send socket event to a specific user's connected socket(s)
+    const sendToUser = (targetUserIdStr, eventName, payload) => {
+      const targetSockets = userSocketsMap.get(targetUserIdStr.toString());
+      if (targetSockets) {
+        targetSockets.forEach((sockId) => {
+          io.to(sockId).emit(eventName, payload);
+        });
+        return true;
+      }
+      return false;
+    };
 
     // Mark user online if first connection
     if (userSocketsMap.get(userIdStr).size === 1) {
@@ -285,9 +344,234 @@ const initSocketServer = (io) => {
       }
     });
 
+    // ==========================================
+    // 📞 WEBRTC AUDIO & VIDEO CALL SIGNALING
+    // ==========================================
+
+    // Initiate Call (call:initiate)
+    socket.on('call:initiate', async (data, callback) => {
+      try {
+        const { conversationId, targetUserId, callType } = data || {};
+        const callerUserIdStr = socket.user._id.toString();
+
+        if (!conversationId || !targetUserId || !callType) {
+          if (callback) callback({ status: 'error', message: 'Missing call parameter fields' });
+          return;
+        }
+
+        // Check if caller is already in an active call
+        for (const [cId, call] of activeCallsMap.entries()) {
+          if (call.callerId === callerUserIdStr || call.targetUserId === callerUserIdStr) {
+            if (callback) callback({ status: 'error', message: 'You are already in an active call' });
+            return;
+          }
+        }
+
+        // Check if target user is in another call
+        const targetUserIdStr = targetUserId.toString();
+        for (const [cId, call] of activeCallsMap.entries()) {
+          if (call.callerId === targetUserIdStr || call.targetUserId === targetUserIdStr) {
+            sendToUser(callerUserIdStr, 'call:busy', { conversationId, targetUserId: targetUserIdStr });
+            await saveCallHistoryMessage({
+              conversationId,
+              senderId: socket.user._id,
+              callType,
+              callStatus: 'busy'
+            });
+            if (callback) callback({ status: 'busy', message: 'User is in another call' });
+            return;
+          }
+        }
+
+        // Verify conversation validity
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation || !conversation.participants.some((p) => p.toString() === targetUserIdStr)) {
+          if (callback) callback({ status: 'error', message: 'Invalid target conversation or user' });
+          return;
+        }
+
+        const callId = `call_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+        const callData = {
+          callId,
+          conversationId: conversationId.toString(),
+          callerId: callerUserIdStr,
+          targetUserId: targetUserIdStr,
+          callType, // 'audio' | 'video'
+          status: 'calling', // 'calling' | 'ringing' | 'connected'
+          startedAt: Date.now(),
+          connectedAt: null
+        };
+
+        activeCallsMap.set(callId, callData);
+
+        // Notify target user socket(s)
+        const isOnlineAndNotified = sendToUser(targetUserIdStr, 'call:incoming', {
+          callId,
+          conversationId: conversationId.toString(),
+          caller: {
+            _id: socket.user._id,
+            name: socket.user.name,
+            username: socket.user.username,
+            avatar: socket.user.avatar
+          },
+          callType
+        });
+
+        if (!isOnlineAndNotified) {
+          // Target user is offline
+          activeCallsMap.delete(callId);
+          await saveCallHistoryMessage({
+            conversationId,
+            senderId: socket.user._id,
+            callType,
+            callStatus: 'missed'
+          });
+          if (callback) callback({ status: 'offline', message: 'User is currently offline' });
+          return;
+        }
+
+        if (callback) callback({ status: 'ok', callId });
+      } catch (err) {
+        console.error('[Call Initiate Error]:', err.message);
+        if (callback) callback({ status: 'error', message: err.message });
+      }
+    });
+
+    // Accept Call (call:accept)
+    socket.on('call:accept', (data, callback) => {
+      const { callId } = data || {};
+      const call = activeCallsMap.get(callId);
+
+      if (!call) {
+        if (callback) callback({ status: 'error', message: 'Call no longer active' });
+        return;
+      }
+
+      call.status = 'connected';
+      call.connectedAt = Date.now();
+
+      sendToUser(call.callerId, 'call:accepted', {
+        callId,
+        acceptedBy: socket.user._id
+      });
+
+      if (callback) callback({ status: 'ok' });
+    });
+
+    // Decline Call (call:decline)
+    socket.on('call:decline', async (data) => {
+      const { callId, reason } = data || {};
+      const call = activeCallsMap.get(callId);
+
+      if (call) {
+        sendToUser(call.callerId, 'call:declined', {
+          callId,
+          reason: reason || 'declined'
+        });
+
+        activeCallsMap.delete(callId);
+
+        await saveCallHistoryMessage({
+          conversationId: call.conversationId,
+          senderId: socket.user._id,
+          callType: call.callType,
+          callStatus: 'declined'
+        });
+      }
+    });
+
+    // WebRTC Offer (call:offer)
+    socket.on('call:offer', (data) => {
+      const { callId, targetUserId, sdp } = data || {};
+      if (targetUserId && sdp) {
+        sendToUser(targetUserId, 'call:offer', {
+          callId,
+          callerUserId: socket.user._id,
+          sdp
+        });
+      }
+    });
+
+    // WebRTC Answer (call:answer)
+    socket.on('call:answer', (data) => {
+      const { callId, targetUserId, sdp } = data || {};
+      if (targetUserId && sdp) {
+        sendToUser(targetUserId, 'call:answer', {
+          callId,
+          answerUserId: socket.user._id,
+          sdp
+        });
+      }
+    });
+
+    // WebRTC ICE Candidate (call:ice-candidate)
+    socket.on('call:ice-candidate', (data) => {
+      const { callId, targetUserId, candidate } = data || {};
+      if (targetUserId && candidate) {
+        sendToUser(targetUserId, 'call:ice-candidate', {
+          callId,
+          senderUserId: socket.user._id,
+          candidate
+        });
+      }
+    });
+
+    // End Call (call:end)
+    socket.on('call:end', async (data) => {
+      const { callId, reason } = data || {};
+      const call = activeCallsMap.get(callId);
+
+      if (call) {
+        const peerUserId = call.callerId === userIdStr ? call.targetUserId : call.callerId;
+        const duration = call.connectedAt ? Math.floor((Date.now() - call.connectedAt) / 1000) : 0;
+        const finalStatus = duration > 0 ? 'ended' : (call.status === 'calling' ? 'missed' : 'ended');
+
+        sendToUser(peerUserId, 'call:ended', {
+          callId,
+          reason: reason || 'ended',
+          duration
+        });
+
+        activeCallsMap.delete(callId);
+
+        await saveCallHistoryMessage({
+          conversationId: call.conversationId,
+          senderId: socket.user._id,
+          callType: call.callType,
+          callStatus: finalStatus,
+          callDuration: duration
+        });
+      }
+    });
+
     // Disconnect Handler
     socket.on('disconnect', async () => {
       console.log(`[Socket Disconnected] User: ${socket.user.username} (${socket.id})`);
+
+      // Check if user was in an active call on disconnect
+      for (const [callId, call] of activeCallsMap.entries()) {
+        if (call.callerId === userIdStr || call.targetUserId === userIdStr) {
+          const peerUserId = call.callerId === userIdStr ? call.targetUserId : call.callerId;
+          const duration = call.connectedAt ? Math.floor((Date.now() - call.connectedAt) / 1000) : 0;
+          const finalStatus = duration > 0 ? 'ended' : 'missed';
+
+          sendToUser(peerUserId, 'call:ended', {
+            callId,
+            reason: 'disconnected',
+            duration
+          });
+
+          activeCallsMap.delete(callId);
+
+          saveCallHistoryMessage({
+            conversationId: call.conversationId,
+            senderId: socket.user._id,
+            callType: call.callType,
+            callStatus: finalStatus,
+            callDuration: duration
+          });
+        }
+      }
 
       if (userSocketsMap.has(userIdStr)) {
         const userSet = userSocketsMap.get(userIdStr);

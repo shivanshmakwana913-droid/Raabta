@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Play, Pause, AlertCircle } from 'lucide-react';
+import { Play, Pause, AlertCircle, Download } from 'lucide-react';
 
 export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, isMe = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -10,6 +10,23 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
   const [hasError, setHasError] = useState(false);
 
   const audioRef = useRef(null);
+
+  const handleDownload = async () => {
+    try {
+      const response = await fetch(audioUrl);
+      const blob = await response.blob();
+      const blobUrl = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = blobUrl;
+      a.download = `voice_note_${Date.now()}.webm`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
+    } catch {
+      window.open(audioUrl, '_blank');
+    }
+  };
 
   useEffect(() => {
     const audio = new Audio(audioUrl);
@@ -109,40 +126,52 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
 
   if (hasError) {
     return (
-      <div className="flex items-center space-x-2 py-2 px-1 text-xs text-rose-500 font-medium">
-        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '6px 4px', fontSize: '0.8rem', color: '#ef4444' }}>
+        <AlertCircle size={16} />
         <span>Failed to load voice message</span>
       </div>
     );
   }
 
   return (
-    <div className="flex flex-col gap-1.5 py-1 min-w-[210px] max-w-[280px]">
-      <div className="flex items-center gap-3">
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', padding: '2px 0', minWidth: '220px', maxWidth: '290px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
         {/* Play/Pause Button */}
         <button
           type="button"
           onClick={togglePlay}
           disabled={isLoading}
-          className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 transition-transform active:scale-95 shadow-sm ${
-            isMe
-              ? 'bg-white/20 hover:bg-white/30 text-white'
-              : 'bg-indigo-600 hover:bg-indigo-700 text-white'
-          }`}
+          style={{
+            width: '38px',
+            height: '38px',
+            borderRadius: '50%',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            border: 'none',
+            background: isMe ? 'rgba(255, 255, 255, 0.25)' : 'var(--accent-gradient)',
+            color: '#ffffff',
+            cursor: 'pointer',
+            boxShadow: '0 2px 8px rgba(0,0,0,0.15)',
+            transition: 'transform 0.15s ease'
+          }}
+          onMouseEnter={(e) => e.currentTarget.style.transform = 'scale(1.06)'}
+          onMouseLeave={(e) => e.currentTarget.style.transform = 'scale(1)'}
           title={isPlaying ? 'Pause' : 'Play voice message'}
         >
           {isPlaying ? (
-            <Pause className="w-5 h-5 fill-current" />
+            <Pause size={18} style={{ fill: 'currentColor' }} />
           ) : (
-            <Play className="w-5 h-5 fill-current translate-x-0.5" />
+            <Play size={18} style={{ fill: 'currentColor', marginLeft: '2px' }} />
           )}
         </button>
 
         {/* Interactive Waveform Bar */}
-        <div className="flex-1 flex flex-col gap-1">
+        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '4px' }}>
           <div
             onClick={handleSeek}
-            className="h-8 flex items-center gap-[3px] cursor-pointer group py-1"
+            style={{ height: '30px', display: 'flex', alignItems: 'center', gap: '3px', cursor: 'pointer', padding: '4px 0' }}
             title="Seek audio position"
           >
             {waveformHeights.map((height, idx) => {
@@ -152,43 +181,62 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
               return (
                 <span
                   key={idx}
-                  className={`flex-1 rounded-full transition-all duration-150 ${
-                    isPlayed
-                      ? isMe
-                        ? 'bg-white'
-                        : 'bg-indigo-600 dark:bg-indigo-400'
-                      : isMe
-                      ? 'bg-white/30 group-hover:bg-white/40'
-                      : 'bg-zinc-300 dark:bg-zinc-700 group-hover:bg-zinc-400 dark:group-hover:bg-zinc-600'
-                  }`}
-                  style={{ height: `${height}%` }}
+                  style={{
+                    flex: 1,
+                    borderRadius: '4px',
+                    height: `${height}%`,
+                    background: isPlayed
+                      ? isMe ? '#ffffff' : 'var(--accent-primary)'
+                      : isMe ? 'rgba(255, 255, 255, 0.35)' : 'var(--border-color)',
+                    transition: 'all 0.15s ease'
+                  }}
                 />
               );
             })}
           </div>
 
-          {/* Time & Speed controls */}
-          <div
-            className={`flex items-center justify-between text-[11px] font-medium leading-none ${
-              isMe ? 'text-white/80' : 'text-zinc-500 dark:text-zinc-400'
-            }`}
-          >
+          {/* Time, Speed & Download controls */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 600, color: isMe ? 'rgba(255, 255, 255, 0.85)' : 'var(--text-muted)' }}>
             <span>
               {isPlaying ? formatAudioTime(currentTime) : formatAudioTime(duration)}
             </span>
 
-            <button
-              type="button"
-              onClick={handleSpeedToggle}
-              className={`px-1.5 py-0.5 rounded text-[10px] font-bold uppercase transition-colors ${
-                isMe
-                  ? 'bg-white/20 hover:bg-white/30 text-white'
-                  : 'bg-zinc-200 dark:bg-zinc-800 hover:bg-zinc-300 dark:hover:bg-zinc-700 text-zinc-700 dark:text-zinc-300'
-              }`}
-              title="Playback speed"
-            >
-              {playbackRate}x
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handleSpeedToggle}
+                style={{
+                  padding: '2px 6px',
+                  borderRadius: '6px',
+                  fontSize: '0.68rem',
+                  fontWeight: 800,
+                  border: 'none',
+                  background: isMe ? 'rgba(255, 255, 255, 0.25)' : 'var(--bg-tertiary)',
+                  color: isMe ? '#ffffff' : 'var(--text-primary)',
+                  cursor: 'pointer'
+                }}
+                title="Playback speed"
+              >
+                {playbackRate}x
+              </button>
+
+              <button
+                type="button"
+                onClick={handleDownload}
+                style={{
+                  padding: '2px',
+                  border: 'none',
+                  background: 'transparent',
+                  color: isMe ? '#ffffff' : 'var(--text-muted)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
+                title="Download voice note"
+              >
+                <Download size={13} />
+              </button>
+            </div>
           </div>
         </div>
       </div>

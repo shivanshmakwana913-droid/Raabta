@@ -127,7 +127,7 @@ const createMessageService = async ({
     .populate('sender', 'name username avatar')
     .populate({
       path: 'replyTo',
-      select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
+      select: 'content messageType imageUrl audioUrl audioDuration callType callStatus callDuration sender isDeleted',
       populate: { path: 'sender', select: 'name username avatar' }
     });
 
@@ -181,7 +181,7 @@ const editMessageService = async ({ messageId, userId, content }) => {
     .populate('sender', 'name username avatar')
     .populate({
       path: 'replyTo',
-      select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
+      select: 'content messageType imageUrl audioUrl audioDuration callType callStatus callDuration sender isDeleted',
       populate: { path: 'sender', select: 'name username avatar' }
     })
     .populate('reactions.user', 'name username avatar');
@@ -221,7 +221,7 @@ const deleteMessageService = async ({ messageId, userId }) => {
     .populate('sender', 'name username avatar')
     .populate({
       path: 'replyTo',
-      select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
+      select: 'content messageType imageUrl audioUrl audioDuration callType callStatus callDuration sender isDeleted',
       populate: { path: 'sender', select: 'name username avatar' }
     });
 
@@ -281,7 +281,7 @@ const reactMessageService = async ({ messageId, userId, emoji }) => {
     .populate('reactions.user', 'name username avatar')
     .populate({
       path: 'replyTo',
-      select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
+      select: 'content messageType imageUrl audioUrl audioDuration callType callStatus callDuration sender isDeleted',
       populate: { path: 'sender', select: 'name username avatar' }
     });
 

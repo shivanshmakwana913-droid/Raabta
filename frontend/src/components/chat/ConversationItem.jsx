@@ -1,5 +1,5 @@
 import { formatConversationTime } from '../../utils/dateFormatter';
-import { Image as ImageIcon, Users, Mic } from 'lucide-react';
+import { Image as ImageIcon, Users, Mic, Phone, Video } from 'lucide-react';
 
 const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) => {
   const isGroup = conversation.type === 'group';
@@ -36,6 +36,16 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
 
     if (lastMessage.isDeleted) {
       return <span style={{ fontStyle: 'italic', color: 'var(--text-muted)' }}>Message deleted</span>;
+    }
+
+    if (lastMessage.messageType === 'call') {
+      const isVideo = lastMessage.callType === 'video';
+      return (
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+          {isVideo ? <Video size={13} style={{ color: lastMessage.callStatus === 'missed' ? '#ef4444' : '#a855f7' }} /> : <Phone size={13} style={{ color: lastMessage.callStatus === 'missed' ? '#ef4444' : '#10b981' }} />}
+          <span>{lastMessage.content || `${isVideo ? 'Video' : 'Audio'} call`}</span>
+        </span>
+      );
     }
 
     if (lastMessage.messageType === 'audio') {

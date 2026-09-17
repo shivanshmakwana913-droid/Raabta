@@ -6,6 +6,7 @@ const cors = require('cors');
 const rateLimit = require('express-rate-limit');
 const { Server } = require('socket.io');
 const connectDB = require('./src/config/db');
+const checkDbConnection = require('./src/middleware/dbMiddleware');
 
 const authRoutes = require('./src/routes/authRoutes');
 const userRoutes = require('./src/routes/userRoutes');
@@ -15,18 +16,38 @@ const reportRoutes = require('./src/routes/reportRoutes');
 const { notFound, errorHandler } = require('./src/middleware/errorMiddleware');
 const initSocketServer = require('./src/sockets/socketHandler');
 
+const fs = require('fs');
+
 const app = express();
 const server = http.createServer(app);
 
-// Connect to Database
-connectDB();
+// Ensure uploads folder exists for local media storage
+const uploadsDir = path.join(__dirname, 'uploads');
+if (!fs.existsSync(uploadsDir)) {
+  fs.mkdirSync(uploadsDir, { recursive: true });
+}
+
+// Flexible CORS helper to allow localhost, local network IPs, and configured CLIENT_URL
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (process.env.CLIENT_URL && origin === process.env.CLIENT_URL) {
+      return callback(null, true);
+    }
+    // Allow localhost and private local IP addresses (192.168.x.x, 10.x.x.x, 172.16-31.x.x)
+    const isLocalOrNetwork = /^http:\/\/(localhost|127\.0\.0\.1|192\.168\.\d+\.\d+|10\.\d+\.\d+\.\d+|172\.(1[6-9]|2\d|3[01])\.\d+\.\d+)(:\d+)?$/.test(origin);
+    if (isLocalOrNetwork) {
+      return callback(null, true);
+    }
+    return callback(null, true);
+  },
+  credentials: true
+};
 
 // Core Middleware
-app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:5173',
-  credentials: true
-}));
-app.use(express.json({ limit: '1mb' }));
+app.use(cors(corsOptions));
+app.use(express.json({ limit: '10mb' }));
+app.use('/uploads', express.static(uploadsDir));
 
 // Rate Limiters for Abuse Protection
 const authLimiter = rateLimit({
@@ -59,12 +80,12 @@ app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Raabta Backend API Running' });
 });
 
-// REST API Routes
-app.use('/api/auth', authRoutes);
-app.use('/api/users', userRoutes);
-app.use('/api/conversations', conversationRoutes);
-app.use('/api/messages', messageRoutes);
-app.use('/api/reports', reportRoutes);
+// REST API Routes with DB Connection Readiness Middleware
+app.use('/api/auth', checkDbConnection, authRoutes);
+app.use('/api/users', checkDbConnection, userRoutes);
+app.use('/api/conversations', checkDbConnection, conversationRoutes);
+app.use('/api/messages', checkDbConnection, messageRoutes);
+app.use('/api/reports', checkDbConnection, reportRoutes);
 
 // Error Handling Middleware
 app.use(notFound);
@@ -73,15 +94,35 @@ app.use(errorHandler);
 // Socket.IO Server Setup
 const io = new Server(server, {
   cors: {
-    origin: process.env.CLIENT_URL || 'http://localhost:5173',
-    methods: ['GET', 'POST']
+    origin: corsOptions.origin,
+    methods: ['GET', 'POST'],
+    credentials: true
   }
 });
 
-// Initialize Socket Event Handlers & Middleware
-initSocketServer(io);
+// Sequential Startup Function
+const startServer = async () => {
+  try {
+    const mongoURI = process.env.MONGODB_URI || process.env.MONGO_URI;
+    if (!mongoURI || !mongoURI.trim()) {
+      console.error('Database configuration error: MONGODB_URI is missing. Add it to backend/.env.');
+      process.exit(1);
+    }
 
-const PORT = process.env.PORT || 5000;
-server.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+    // Connect to MongoDB before starting server or socket server
+    await connectDB();
+
+    // Initialize Socket Event Handlers & Middleware
+    initSocketServer(io);
+
+    const PORT = process.env.PORT || 5000;
+    server.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  } catch (error) {
+    console.error(`[Fatal Startup Error]: Unable to connect to MongoDB - ${error.message}`);
+    process.exit(1);
+  }
+};
+
+startServer();

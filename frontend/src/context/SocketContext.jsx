@@ -4,10 +4,19 @@ import { useAuth } from './AuthContext';
 
 const SocketContext = createContext();
 
-const SOCKET_SERVER_URL =
-  import.meta.env.VITE_SOCKET_URL ||
-  import.meta.env.VITE_API_URL?.replace('/api', '') ||
-  'http://localhost:5000';
+const getSocketServerUrl = () => {
+  const hostname = typeof window !== 'undefined' && window.location.hostname ? window.location.hostname : 'localhost';
+  let envUrl = import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_URL?.replace('/api', '');
+  if (envUrl) {
+    if (hostname !== 'localhost' && hostname !== '127.0.0.1' && envUrl.includes('localhost')) {
+      return envUrl.replace('localhost', hostname);
+    }
+    return envUrl;
+  }
+  return `http://${hostname}:5000`;
+};
+
+const SOCKET_SERVER_URL = getSocketServerUrl();
 
 export const SocketProvider = ({ children }) => {
   const { user, token } = useAuth();

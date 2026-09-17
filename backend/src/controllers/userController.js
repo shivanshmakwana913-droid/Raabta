@@ -27,8 +27,12 @@ const checkUsername = async (req, res, next) => {
     }
 
     const normalized = trimmed.toLowerCase();
+    const escapedNormalized = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
     const existingUser = await User.findOne({
-      $or: [{ normalizedUsername: normalized }, { username: normalized }]
+      $or: [
+        { normalizedUsername: normalized },
+        { username: { $regex: `^${escapedNormalized}$`, $options: 'i' } }
+      ]
     }).select('_id');
 
     // If current logged-in user is checking their own username
@@ -47,6 +51,7 @@ const checkUsername = async (req, res, next) => {
       message: 'Username is available'
     });
   } catch (error) {
+    console.error('[Check Username Error]:', error.message);
     next(error);
   }
 };
@@ -139,7 +144,7 @@ const getProfile = async (req, res, next) => {
       res.status(404);
       throw new Error('User profile not found');
     }
-    res.status(200).json({ user });
+    res.status(200).json({ user: user.toAuthJSON() });
   } catch (error) {
     next(error);
   }
@@ -184,8 +189,12 @@ const updateProfile = async (req, res, next) => {
 
       // Check if username is taken by another user
       if (normalized !== (user.normalizedUsername || user.username.toLowerCase())) {
+        const escapedNormalized = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
         const usernameExists = await User.findOne({
-          $or: [{ normalizedUsername: normalized }, { username: normalized }],
+          $or: [
+            { normalizedUsername: normalized },
+            { username: { $regex: `^${escapedNormalized}$`, $options: 'i' } }
+          ],
           _id: { $ne: user._id }
         });
 
@@ -224,25 +233,45 @@ const updateProfile = async (req, res, next) => {
 
     res.status(200).json({
       message: 'Profile updated successfully',
-      user: {
-        _id: updatedUser._id,
-        name: updatedUser.name,
-        username: updatedUser.username,
-        email: updatedUser.email,
-        avatar: updatedUser.avatar,
-        bio: updatedUser.bio,
-        isOnline: updatedUser.isOnline,
-        lastSeen: updatedUser.lastSeen,
-        privacySettings: updatedUser.privacySettings,
-        blockedUsers: updatedUser.blockedUsers,
-        createdAt: updatedUser.createdAt
-      }
+      user: updatedUser.toAuthJSON()
     });
   } catch (error) {
     if (error.code === 11000) {
       res.status(400);
       return next(new Error('Username is already taken'));
     }
+    next(error);
+  }
+};
+
+// @desc    Upload profile avatar photo
+// @route   POST /api/users/avatar
+// @access  Private
+const uploadAvatar = async (req, res, next) => {
+  try {
+    if (!req.file) {
+      res.status(400);
+      throw new Error('Please select an image file to upload as your profile avatar');
+    }
+
+    const { uploadToCloudinary } = require('../config/cloudinary');
+    const uploadResult = await uploadToCloudinary(req.file.buffer, 'avatars');
+
+    const user = await User.findById(req.user._id);
+    if (!user) {
+      res.status(404);
+      throw new Error('User not found');
+    }
+
+    user.avatar = uploadResult.url;
+    const updatedUser = await user.save();
+
+    res.status(200).json({
+      message: 'Avatar uploaded successfully',
+      avatar: uploadResult.url,
+      user: updatedUser.toAuthJSON()
+    });
+  } catch (error) {
     next(error);
   }
 };
@@ -504,6 +533,7 @@ module.exports = {
   searchUsers,
   getProfile,
   updateProfile,
+  uploadAvatar,
   blockUser,
   unblockUser,
   getBlockedUsers,

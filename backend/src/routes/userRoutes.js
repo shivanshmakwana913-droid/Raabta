@@ -6,6 +6,7 @@ const {
   searchUsers,
   getProfile,
   updateProfile,
+  uploadAvatar,
   blockUser,
   unblockUser,
   getBlockedUsers,
@@ -17,6 +18,7 @@ const {
   getUserPhoneDetails
 } = require('../controllers/userController');
 const { protect, optionalProtect } = require('../middleware/authMiddleware');
+const { upload } = require('../config/cloudinary');
 
 // Public / Optional Auth routes
 router.get('/check-username', optionalProtect, checkUsername);
@@ -26,6 +28,7 @@ router.get('/profile/:username', optionalProtect, getPublicProfile);
 router.get('/search', protect, searchUsers);
 router.get('/profile', protect, getProfile);
 router.put('/profile', protect, updateProfile);
+router.post('/avatar', protect, upload.single('avatar'), uploadAvatar);
 
 router.post('/block/:id', protect, blockUser);
 router.delete('/block/:id', protect, unblockUser);

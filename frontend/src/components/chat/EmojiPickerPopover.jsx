@@ -143,52 +143,98 @@ export default function EmojiPickerPopover({ onSelectEmoji, onClose }) {
   return (
     <div 
       ref={containerRef}
-      className="absolute bottom-16 right-8 sm:right-24 z-50 w-72 sm:w-80 bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-zinc-800 rounded-2xl shadow-2xl overflow-hidden flex flex-col transition-all duration-200 animate-in fade-in slide-in-from-bottom-3"
-      style={{ maxHeight: '380px', height: '360px' }}
+      className="emoji-picker-popover animate-scale-in"
+      style={{
+        position: 'absolute',
+        bottom: '68px',
+        right: '16px',
+        width: '330px',
+        maxWidth: 'calc(100vw - 32px)',
+        height: '350px',
+        maxHeight: '45vh',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-color)',
+        borderRadius: '20px',
+        boxShadow: 'var(--shadow-lg)',
+        zIndex: 1000,
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}
     >
       {/* Header */}
-      <div className="px-4 py-2.5 border-b border-zinc-100 dark:border-zinc-800/80 flex items-center justify-between bg-zinc-50/70 dark:bg-zinc-900/90">
-        <div className="flex items-center space-x-2">
-          <Smile className="w-4 h-4 text-indigo-500" />
-          <span className="font-semibold text-xs text-zinc-800 dark:text-zinc-100">Emojis</span>
+      <div style={{
+        padding: '10px 14px',
+        borderBottom: '1px solid var(--border-color)',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: 'var(--bg-primary)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <Smile size={18} style={{ color: 'var(--accent-primary)' }} />
+          <span style={{ fontWeight: '700', fontSize: '0.88rem', color: 'var(--text-primary)' }}>Emojis</span>
         </div>
         <button
           onClick={onClose}
-          className="p-1 rounded-full text-zinc-400 hover:text-zinc-600 dark:hover:text-zinc-200 hover:bg-zinc-200/50 dark:hover:bg-zinc-800 transition-colors"
-          title="Close"
+          aria-label="Close emoji picker"
+          className="action-icon-btn"
+          style={{ width: '28px', height: '28px', borderRadius: '50%' }}
         >
-          <X className="w-3.5 h-3.5" />
+          <X size={16} />
         </button>
       </div>
 
       {/* Search Input */}
-      <div className="p-2.5 border-b border-zinc-100 dark:border-zinc-800/60">
-        <div className="relative">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-zinc-400" />
+      <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border-color)' }}>
+        <div style={{ position: 'relative' }}>
+          <Search size={15} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
             placeholder="Search emoji..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-8 pr-3 py-1 text-xs rounded-xl bg-zinc-100 dark:bg-zinc-800/60 border border-transparent focus:border-indigo-500/40 text-zinc-800 dark:text-zinc-100 placeholder-zinc-400 outline-none transition-all"
+            style={{
+              width: '100%',
+              padding: '7px 10px 7px 32px',
+              fontSize: '0.82rem',
+              borderRadius: '12px',
+              background: 'var(--bg-input)',
+              border: '1px solid var(--border-color)',
+              color: 'var(--text-primary)',
+              outline: 'none'
+            }}
           />
         </div>
       </div>
 
-      {/* Category Tabs (hidden when searching) */}
+      {/* Category Tabs */}
       {!searchTerm.trim() && (
-        <div className="flex items-center px-2 py-1.5 gap-1 overflow-x-auto border-b border-zinc-100 dark:border-zinc-800/60 bg-zinc-50/40 dark:bg-zinc-900/40 no-scrollbar">
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '4px',
+          padding: '6px 10px',
+          overflowX: 'auto',
+          borderBottom: '1px solid var(--border-color)',
+          background: 'var(--bg-primary)'
+        }}>
           {recentEmojis.length > 0 && (
             <button
               onClick={() => setActiveCategoryId('recents')}
-              className={`p-1.5 rounded-lg text-xs transition-colors ${
-                activeCategoryId === 'recents'
-                  ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-semibold'
-                  : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
-              }`}
-              title="Recent"
+              title="Recent Emojis"
+              style={{
+                padding: '6px 10px',
+                borderRadius: '8px',
+                border: 'none',
+                background: activeCategoryId === 'recents' ? 'var(--accent-glow)' : 'transparent',
+                color: activeCategoryId === 'recents' ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center'
+              }}
             >
-              <Clock className="w-4 h-4" />
+              <Clock size={16} />
             </button>
           )}
 
@@ -199,36 +245,56 @@ export default function EmojiPickerPopover({ onSelectEmoji, onClose }) {
               <button
                 key={cat.id}
                 onClick={() => setActiveCategoryId(cat.id)}
-                className={`p-1.5 rounded-lg text-xs transition-colors ${
-                  isActive
-                    ? 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 font-semibold'
-                    : 'text-zinc-500 hover:text-zinc-800 dark:text-zinc-400 dark:hover:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800/50'
-                }`}
                 title={cat.name}
+                style={{
+                  padding: '6px 10px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: isActive ? 'var(--accent-glow)' : 'transparent',
+                  color: isActive ? 'var(--accent-primary)' : 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center'
+                }}
               >
-                <Icon className="w-4 h-4" />
+                <Icon size={16} />
               </button>
             );
           })}
         </div>
       )}
 
-      {/* Emoji Grid View */}
-      <div className="flex-1 p-2 overflow-y-auto custom-scrollbar">
+      {/* Emoji Grid */}
+      <div style={{ flex: 1, padding: '10px', overflowY: 'auto' }}>
         {displayEmojis.length === 0 ? (
-          <div className="h-full flex flex-col items-center justify-center text-center text-zinc-400 p-4">
-            <Smile className="w-6 h-6 mb-1 opacity-50 stroke-[1.5]" />
-            <p className="text-xs text-zinc-500 dark:text-zinc-400">
-              No emojis found
-            </p>
+          <div style={{ height: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+            <Smile size={24} style={{ marginBottom: '6px', opacity: 0.5 }} />
+            <span style={{ fontSize: '0.82rem' }}>No emojis found</span>
           </div>
         ) : (
-          <div className="grid grid-cols-7 gap-1">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(7, 1fr)',
+            gap: '6px'
+          }}>
             {displayEmojis.map((emoji, idx) => (
               <button
                 key={idx + emoji}
                 onClick={() => handleEmojiClick(emoji)}
-                className="w-8 h-8 rounded-lg flex items-center justify-center text-lg hover:bg-indigo-50 dark:hover:bg-indigo-950/40 hover:scale-125 transition-transform duration-150 active:scale-95"
+                style={{
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '8px',
+                  border: 'none',
+                  background: 'transparent',
+                  fontSize: '1.25rem',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'transform 0.15s ease'
+                }}
+                className="emoji-btn-hover"
               >
                 {emoji}
               </button>
