@@ -2,13 +2,23 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/png" href="/raabta-logo.png" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="Raabta is a real-time social messaging platform built with React, Node.js, Express, MongoDB and Socket.IO." />
-    <title>Raabta — Jahan baatein judti hain</title>
+    <title>Raabta — Feel Connected.</title>
+    <style>
+      @keyframes raabtaStartupPulse {
+        0%, 100% { transform: scale(1); opacity: 0.85; }
+        50% { transform: scale(1.08); opacity: 1; filter: drop-shadow(0 0 16px rgba(99, 102, 241, 0.4)); }
+      }
+    </style>
   </head>
-  <body>
-    <div id="root"></div>
+  <body style="background-color: #090d16; margin: 0;">
+    <div id="root">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100vh;width:100vw;background:#090d16;position:fixed;inset:0;z-index:99999;">
+        <img src="/raabta-logo.png" alt="Raabta" style="width:64px;height:64px;object-fit:contain;animation:raabtaStartupPulse 1.8s ease-in-out infinite;" />
+      </div>
+    </div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
 </html>

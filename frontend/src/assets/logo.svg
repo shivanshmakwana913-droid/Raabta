@@ -1,0 +1,62 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 240" width="100%" height="100%">
+  <defs>
+    <linearGradient id="textGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="60%" stop-color="#F1F5F9"/>
+      <stop offset="100%" stop-color="#CBD5E1"/>
+    </linearGradient>
+
+    <linearGradient id="taglineGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="50%" stop-color="#C084FC"/>
+      <stop offset="100%" stop-color="#F472B6"/>
+    </linearGradient>
+
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1e1b4b"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+    
+    <linearGradient id="hLeft" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#818CF8"/>
+      <stop offset="100%" stop-color="#4F46E5"/>
+    </linearGradient>
+
+    <linearGradient id="hRight" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#C084FC"/>
+      <stop offset="100%" stop-color="#9333EA"/>
+    </linearGradient>
+
+    <linearGradient id="hAccent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#38BDF8"/>
+      <stop offset="100%" stop-color="#F472B6"/>
+    </linearGradient>
+
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#6366F1" flood-opacity="0.4"/>
+    </filter>
+  </defs>
+
+  <!-- Left Icon Mark Container -->
+  <g transform="translate(20, 20)">
+    <rect x="0" y="0" width="200" height="200" rx="48" fill="url(#iconBg)" stroke="url(#hAccent)" stroke-width="4" filter="url(#shadow)"/>
+    
+    <!-- Handshake Graphic Inside Icon Box -->
+    <g transform="translate(100, 100) scale(0.35) translate(-256, -256)">
+      <path d="M 95 190 C 130 190, 160 215, 205 240 L 250 265 C 265 273, 280 270, 292 258 C 304 246, 302 230, 288 220 L 240 185 C 220 170, 185 160, 135 170 Z" 
+            fill="url(#hLeft)"/>
+      <path d="M 417 322 C 382 322, 352 297, 307 272 L 262 247 C 247 239, 232 242, 220 254 C 208 266, 210 282, 224 292 L 272 327 C 292 342, 327 352, 377 342 Z" 
+            fill="url(#hRight)"/>
+      <path d="M 215 210 C 235 185, 275 180, 295 205 C 305 218, 300 235, 282 240 C 265 245, 230 235, 215 210 Z" 
+            fill="url(#hLeft)" opacity="0.9"/>
+      <path d="M 230 280 C 210 300, 225 325, 250 325 C 275 325, 305 295, 285 270 C 270 250, 245 260, 230 280 Z" 
+            fill="url(#hRight)"/>
+      <path d="M 130 195 C 190 215, 270 290, 380 315" 
+            fill="none" stroke="url(#hAccent)" stroke-width="9" stroke-linecap="round"/>
+    </g>
+  </g>
+
+  <!-- Right Typography Section -->
+  <text x="250" y="130" font-family="'Outfit', 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="105" font-weight="900" fill="url(#textGrad)" letter-spacing="-3">Raabta</text>
+  <text x="256" y="180" font-family="'Outfit', 'Plus Jakarta Sans', 'Inter', system-ui, sans-serif" font-size="32" font-weight="700" fill="url(#taglineGrad)" letter-spacing="4">FEEL CONNECTED</text>
+</svg>

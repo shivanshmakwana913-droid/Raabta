@@ -9,7 +9,6 @@ import SettingsModal from '../components/settings/SettingsModal';
 import ReportModal from '../components/report/ReportModal';
 import CreateGroupModal from '../components/group/CreateGroupModal';
 import NotificationToast from '../components/chat/NotificationToast';
-import { RaabtaLoader } from '../components/common/RaabtaLoader';
 
 const ChatPage = () => {
   const { user, logout } = useAuth();

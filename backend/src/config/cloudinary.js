@@ -63,7 +63,7 @@ const saveToLocalStorage = (fileBuffer, extension = 'jpg') => {
   const filePath = path.join(uploadsDir, filename);
   fs.writeFileSync(filePath, fileBuffer);
   return {
-    url: `http://localhost:5000/uploads/${filename}`,
+    url: `/uploads/${filename}`,
     publicId: `local_${filename}`
   };
 };

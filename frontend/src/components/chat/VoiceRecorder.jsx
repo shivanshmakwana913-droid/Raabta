@@ -3,7 +3,6 @@ import { Mic, Trash2, Send, AlertTriangle, Loader2 } from 'lucide-react';
 import api from '../../services/api';
 
 export default function VoiceRecorder({ onSendVoiceMessage, onCancelRecording }) {
-  const [isRecording, setIsRecording] = useState(false);
   const [recordingTime, setRecordingTime] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [permissionError, setPermissionError] = useState(false);

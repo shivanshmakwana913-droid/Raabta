@@ -4,19 +4,23 @@ import { useAuth } from './AuthContext';
 
 const CallContext = createContext();
 
-// Default STUN servers, overridable via import.meta.env.VITE_ICE_SERVERS
+// STUN servers list, overridable via import.meta.env.VITE_ICE_SERVERS
 const getIceServers = () => {
   const customIce = import.meta.env.VITE_ICE_SERVERS;
   if (customIce) {
     try {
       return JSON.parse(customIce);
-    } catch (e) {
+    } catch {
       console.warn('[CallContext] Invalid VITE_ICE_SERVERS JSON, using fallback STUN.');
     }
   }
   return [
     { urls: 'stun:stun.l.google.com:19302' },
-    { urls: 'stun:stun1.l.google.com:19302' }
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'stun:global.stun.twilio.com:3478' }
   ];
 };
 
@@ -36,6 +40,7 @@ export const CallProvider = ({ children }) => {
   const [isCameraOff, setIsCameraOff] = useState(false);
   const [callDuration, setCallDuration] = useState(0);
   const [errorMessage, setErrorMessage] = useState(null);
+  const [remoteStream, setRemoteStream] = useState(null);
 
   // References
   const localStreamRef = useRef(null);
@@ -47,16 +52,25 @@ export const CallProvider = ({ children }) => {
   const ringtoneAudioCtxRef = useRef(null);
   const ringtoneOscRef = useRef(null);
 
+  // Refs for event listener closure stability
+  const callIdRef = useRef(callId);
+  const peerUserRef = useRef(peerUser);
+  const callStateRef = useRef(callState);
+
+  useEffect(() => { callIdRef.current = callId; }, [callId]);
+  useEffect(() => { peerUserRef.current = peerUser; }, [peerUser]);
+  useEffect(() => { callStateRef.current = callState; }, [callState]);
+
   // -------------------------------------------------------------
   // Ringtone / Audio Tone Generators (Web Audio API)
   // -------------------------------------------------------------
   const stopAudioTones = useCallback(() => {
     if (ringtoneOscRef.current) {
-      try { ringtoneOscRef.current.stop(); } catch (e) {}
+      try { ringtoneOscRef.current.stop(); } catch {}
       ringtoneOscRef.current = null;
     }
     if (ringtoneAudioCtxRef.current) {
-      try { ringtoneAudioCtxRef.current.close(); } catch (e) {}
+      try { ringtoneAudioCtxRef.current.close(); } catch {}
       ringtoneAudioCtxRef.current = null;
     }
   }, []);
@@ -135,6 +149,8 @@ export const CallProvider = ({ children }) => {
     if (peerConnectionRef.current) {
       peerConnectionRef.current.onicecandidate = null;
       peerConnectionRef.current.ontrack = null;
+      peerConnectionRef.current.onconnectionstatechange = null;
+      peerConnectionRef.current.oniceconnectionstatechange = null;
       peerConnectionRef.current.close();
       peerConnectionRef.current = null;
     }
@@ -142,6 +158,7 @@ export const CallProvider = ({ children }) => {
     pendingIceCandidatesRef.current = [];
     setIsMicMuted(false);
     setIsCameraOff(false);
+    setRemoteStream(null);
   }, [stopAudioTones]);
 
   const resetToIdle = useCallback(() => {
@@ -152,6 +169,9 @@ export const CallProvider = ({ children }) => {
     setPeerUser(null);
     setCallDuration(0);
     setErrorMessage(null);
+    callIdRef.current = null;
+    peerUserRef.current = null;
+    callStateRef.current = 'IDLE';
   }, [cleanupCall]);
 
   // -------------------------------------------------------------
@@ -165,8 +185,8 @@ export const CallProvider = ({ children }) => {
     pc.onicecandidate = (event) => {
       if (event.candidate && socket) {
         socket.emit('call:ice-candidate', {
-          callId: currentCallIdStr,
-          targetUserId: targetUserIdStr,
+          callId: currentCallIdStr || callIdRef.current,
+          targetUserId: targetUserIdStr || peerUserRef.current?._id,
           candidate: event.candidate
         });
       }
@@ -175,15 +195,20 @@ export const CallProvider = ({ children }) => {
     pc.ontrack = (event) => {
       if (event.streams && event.streams[0]) {
         remoteStreamRef.current = event.streams[0];
-        // Trigger state re-render for remote video stream binding
-        setCallState((prev) => prev);
+        setRemoteStream(event.streams[0]);
       }
     };
 
-    pc.onconnectionstatechange = () => {
-      if (pc.connectionState === 'connected') {
+    const handleConnectionState = () => {
+      const isConnected =
+        pc.connectionState === 'connected' ||
+        pc.iceConnectionState === 'connected' ||
+        pc.iceConnectionState === 'completed';
+
+      if (isConnected) {
         stopAudioTones();
         setCallState('CONNECTED');
+        callStateRef.current = 'CONNECTED';
         if (!callTimerRef.current) {
           setCallDuration(0);
           callTimerRef.current = setInterval(() => {
@@ -192,16 +217,16 @@ export const CallProvider = ({ children }) => {
         }
       } else if (
         pc.connectionState === 'failed' ||
-        pc.connectionState === 'disconnected' ||
-        pc.connectionState === 'closed'
+        pc.iceConnectionState === 'failed'
       ) {
-        if (pc.connectionState === 'failed') {
-          setErrorMessage('Peer-to-peer connection failed');
-          setCallState('FAILED');
-          setTimeout(resetToIdle, 3000);
-        }
+        setErrorMessage('Peer-to-peer connection failed.');
+        setCallState('FAILED');
+        setTimeout(resetToIdle, 3000);
       }
     };
+
+    pc.onconnectionstatechange = handleConnectionState;
+    pc.oniceconnectionstatechange = handleConnectionState;
 
     peerConnectionRef.current = pc;
     return pc;
@@ -213,7 +238,7 @@ export const CallProvider = ({ children }) => {
 
   // Initiate Outgoing Call
   const startCall = async ({ conversationId: convId, targetUser, callType: cType }) => {
-    if (callState !== 'IDLE') return;
+    if (callStateRef.current !== 'IDLE') return;
     if (!socket || !socket.connected) {
       alert('Network socket disconnected. Please check your internet connection.');
       return;
@@ -223,7 +248,9 @@ export const CallProvider = ({ children }) => {
     setCallType(cType);
     setConversationId(convId);
     setPeerUser(targetUser);
+    peerUserRef.current = targetUser;
     setCallState('CALLING');
+    callStateRef.current = 'CALLING';
     playOutgoingCallingTone();
 
     // Acquire Local Media Stream
@@ -269,6 +296,7 @@ export const CallProvider = ({ children }) => {
         }
 
         setCallId(response.callId);
+        callIdRef.current = response.callId;
 
         // Set 30-Second Unanswered Timeout
         timeoutTimerRef.current = setTimeout(() => {
@@ -286,11 +314,14 @@ export const CallProvider = ({ children }) => {
 
   // Accept Incoming Call
   const acceptCall = async () => {
-    if (callState !== 'RINGING' || !callId || !peerUser) return;
+    const activeCallId = callIdRef.current || callId;
+    const activePeer = peerUserRef.current || peerUser;
+    if (!activeCallId || !activePeer) return;
     stopAudioTones();
     if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
 
     setCallState('CONNECTING');
+    callStateRef.current = 'CONNECTING';
 
     // Acquire Local Media Stream
     try {
@@ -302,7 +333,7 @@ export const CallProvider = ({ children }) => {
       localStreamRef.current = stream;
     } catch (err) {
       console.error('[CallContext] Accept call media permission error:', err.message);
-      if (socket) socket.emit('call:decline', { callId, reason: 'permission_denied' });
+      if (socket) socket.emit('call:decline', { callId: activeCallId, reason: 'permission_denied' });
       setErrorMessage('Microphone/Camera permission denied.');
       setCallState('FAILED');
       setTimeout(resetToIdle, 3000);
@@ -310,7 +341,7 @@ export const CallProvider = ({ children }) => {
     }
 
     // Create RTCPeerConnection & add local tracks
-    const pc = createPeerConnection(peerUser._id, callId);
+    const pc = createPeerConnection(activePeer._id, activeCallId);
     if (localStreamRef.current) {
       localStreamRef.current.getTracks().forEach((track) => {
         pc.addTrack(track, localStreamRef.current);
@@ -318,7 +349,7 @@ export const CallProvider = ({ children }) => {
     }
 
     // Emit Socket call:accept
-    socket.emit('call:accept', { callId }, async (res) => {
+    socket.emit('call:accept', { callId: activeCallId }, async (res) => {
       if (res && res.status !== 'ok') {
         setErrorMessage('Call no longer available.');
         setCallState('ENDED');
@@ -329,8 +360,9 @@ export const CallProvider = ({ children }) => {
 
   // Decline Incoming Call
   const declineCall = () => {
-    if (callId && socket) {
-      socket.emit('call:decline', { callId, reason: 'declined' });
+    const activeCallId = callIdRef.current || callId;
+    if (activeCallId && socket) {
+      socket.emit('call:decline', { callId: activeCallId, reason: 'declined' });
     }
     stopAudioTones();
     setCallState('DECLINED');
@@ -339,8 +371,9 @@ export const CallProvider = ({ children }) => {
 
   // End Active / Outgoing Call
   const endCall = () => {
-    if (callId && socket) {
-      socket.emit('call:end', { callId, reason: 'ended' });
+    const activeCallId = callIdRef.current || callId;
+    if (activeCallId && socket) {
+      socket.emit('call:end', { callId: activeCallId, reason: 'ended' });
     }
     stopAudioTones();
     setCallState('ENDED');
@@ -381,20 +414,21 @@ export const CallProvider = ({ children }) => {
     const handleIncomingCall = (data) => {
       const { callId: inCallId, conversationId: inConvId, caller, callType: inType } = data || {};
       
-      // If user is already in another call, reject as busy
-      if (callState !== 'IDLE') {
+      if (callStateRef.current !== 'IDLE') {
         socket.emit('call:decline', { callId: inCallId, reason: 'busy' });
         return;
       }
 
       setCallId(inCallId);
+      callIdRef.current = inCallId;
       setConversationId(inConvId);
       setPeerUser(caller);
+      peerUserRef.current = caller;
       setCallType(inType);
       setCallState('RINGING');
+      callStateRef.current = 'RINGING';
       playIncomingRingtone();
 
-      // 30-Second Ringing Timeout
       timeoutTimerRef.current = setTimeout(() => {
         stopAudioTones();
         setCallState('TIMEOUT');
@@ -405,13 +439,16 @@ export const CallProvider = ({ children }) => {
     // Caller receives Acceptance -> Send WebRTC Offer
     const handleCallAccepted = async (data) => {
       const { callId: accCallId } = data || {};
-      if (accCallId !== callId) return;
+      const activeCallId = callIdRef.current || callId;
+      const targetUser = peerUserRef.current || peerUser;
+      if (accCallId && activeCallId && accCallId !== activeCallId) return;
 
       stopAudioTones();
       if (timeoutTimerRef.current) clearTimeout(timeoutTimerRef.current);
       setCallState('CONNECTING');
+      callStateRef.current = 'CONNECTING';
 
-      const pc = createPeerConnection(peerUser._id, callId);
+      const pc = createPeerConnection(targetUser?._id, activeCallId);
       if (localStreamRef.current) {
         localStreamRef.current.getTracks().forEach((track) => {
           pc.addTrack(track, localStreamRef.current);
@@ -423,8 +460,8 @@ export const CallProvider = ({ children }) => {
         await pc.setLocalDescription(offer);
 
         socket.emit('call:offer', {
-          callId,
-          targetUserId: peerUser._id,
+          callId: activeCallId,
+          targetUserId: targetUser?._id,
           sdp: pc.localDescription
         });
       } catch (err) {
@@ -435,8 +472,9 @@ export const CallProvider = ({ children }) => {
 
     // Receive WebRTC SDP Offer -> Create SDP Answer
     const handleCallOffer = async (data) => {
-      const { sdp, callerUserId } = data || {};
+      const { sdp, callerUserId, callId: offerCallId } = data || {};
       const pc = peerConnectionRef.current;
+      const activeCallId = offerCallId || callIdRef.current;
       if (!pc) return;
 
       try {
@@ -445,7 +483,7 @@ export const CallProvider = ({ children }) => {
         await pc.setLocalDescription(answer);
 
         socket.emit('call:answer', {
-          callId,
+          callId: activeCallId,
           targetUserId: callerUserId,
           sdp: pc.localDescription
         });
@@ -453,7 +491,7 @@ export const CallProvider = ({ children }) => {
         // Drain any stored ICE candidates
         while (pendingIceCandidatesRef.current.length > 0) {
           const cand = pendingIceCandidatesRef.current.shift();
-          try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+          try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch {}
         }
       } catch (err) {
         console.error('[CallContext] Handle offer error:', err.message);
@@ -470,7 +508,7 @@ export const CallProvider = ({ children }) => {
         await pc.setRemoteDescription(new RTCSessionDescription(sdp));
         while (pendingIceCandidatesRef.current.length > 0) {
           const cand = pendingIceCandidatesRef.current.shift();
-          try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch (e) {}
+          try { await pc.addIceCandidate(new RTCIceCandidate(cand)); } catch {}
         }
       } catch (err) {
         console.error('[CallContext] Handle answer error:', err.message);
@@ -493,7 +531,7 @@ export const CallProvider = ({ children }) => {
     };
 
     // Call Declined
-    const handleCallDeclined = (data) => {
+    const handleCallDeclined = () => {
       stopAudioTones();
       setCallState('DECLINED');
       setErrorMessage('Call declined');
@@ -501,7 +539,7 @@ export const CallProvider = ({ children }) => {
     };
 
     // Call Busy
-    const handleCallBusy = (data) => {
+    const handleCallBusy = () => {
       stopAudioTones();
       setCallState('BUSY');
       setErrorMessage('User is on another call');
@@ -509,7 +547,7 @@ export const CallProvider = ({ children }) => {
     };
 
     // Call Ended
-    const handleCallEnded = (data) => {
+    const handleCallEnded = () => {
       stopAudioTones();
       setCallState('ENDED');
       setTimeout(resetToIdle, 2000);
@@ -534,7 +572,7 @@ export const CallProvider = ({ children }) => {
       socket.off('call:busy', handleCallBusy);
       socket.off('call:ended', handleCallEnded);
     };
-  }, [socket, user, callState, callId, peerUser, createPeerConnection, stopAudioTones, playIncomingRingtone, resetToIdle, endCall]);
+  }, [socket, user, createPeerConnection, stopAudioTones, playIncomingRingtone, resetToIdle, endCall]);
 
   return (
     <CallContext.Provider
@@ -550,6 +588,7 @@ export const CallProvider = ({ children }) => {
         errorMessage,
         localStreamRef,
         remoteStreamRef,
+        remoteStream,
         startCall,
         acceptCall,
         declineCall,

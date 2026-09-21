@@ -44,7 +44,7 @@ const initSocketServer = (io) => {
         callStatus,
         callDuration: callDuration || 0,
         deliveredAt: new Date(),
-        seenAt: new Date()
+        seenAt: null
       });
 
       await Conversation.findByIdAndUpdate(conversationId, {
@@ -54,6 +54,15 @@ const initSocketServer = (io) => {
 
       const populatedMsg = await Message.findById(message._id).populate('sender', 'name username avatar');
       io.to(conversationId.toString()).emit('receive_message', populatedMsg);
+
+      // Broadcast directly to all participants so active sockets and conversation list update in real time
+      const conv = await Conversation.findById(conversationId).select('participants');
+      if (conv && conv.participants) {
+        conv.participants.forEach((pId) => {
+          sendToUser(pId.toString(), 'receive_message', populatedMsg);
+        });
+      }
+
       return populatedMsg;
     } catch (err) {
       console.error('[Save Call History Error]:', err.message);
@@ -360,7 +369,7 @@ const initSocketServer = (io) => {
         }
 
         // Check if caller is already in an active call
-        for (const [cId, call] of activeCallsMap.entries()) {
+        for (const call of activeCallsMap.values()) {
           if (call.callerId === callerUserIdStr || call.targetUserId === callerUserIdStr) {
             if (callback) callback({ status: 'error', message: 'You are already in an active call' });
             return;
@@ -369,7 +378,7 @@ const initSocketServer = (io) => {
 
         // Check if target user is in another call
         const targetUserIdStr = targetUserId.toString();
-        for (const [cId, call] of activeCallsMap.entries()) {
+        for (const call of activeCallsMap.values()) {
           if (call.callerId === targetUserIdStr || call.targetUserId === targetUserIdStr) {
             sendToUser(callerUserIdStr, 'call:busy', { conversationId, targetUserId: targetUserIdStr });
             await saveCallHistoryMessage({

@@ -3,14 +3,10 @@ import {
   Smile, 
   Sparkles, 
   Flame, 
-  Heart, 
   Search, 
   Clock, 
   X, 
-  ThumbsUp, 
-  Zap, 
-  Coffee, 
-  Star 
+  Zap
 } from 'lucide-react';
 
 // Curated high quality sticker sets (using reliable, SVG / PNG CDN illustrations & stickers)

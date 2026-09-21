@@ -1,7 +1,7 @@
 # Raabta
 
 > **Raabta is a real-time social messaging platform built with React, Node.js, Express, MongoDB and Socket.IO.**
-> *"Jahan baatein judti hain."*
+> *"Feel Connected."*
 
 ---
 

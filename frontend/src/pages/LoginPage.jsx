@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
-import { MessageSquare, Lock, User, AlertCircle, ArrowRight, Phone, KeyRound, RefreshCw, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Lock, User, AlertCircle, ArrowRight, Phone, KeyRound, RefreshCw, CheckCircle2, ShieldCheck } from 'lucide-react';
 import { RaabtaLoader } from '../components/common/RaabtaLoader';
+import { RaabtaLogoMark } from '../components/common/RaabtaLogo';
 
 const LoginPage = () => {
   const [loginMode, setLoginMode] = useState('credentials'); // 'credentials' | 'phone'
@@ -146,22 +147,14 @@ const LoginPage = () => {
       }}>
         {/* Brand Header */}
         <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{
-            display: 'inline-flex',
-            padding: '16px',
-            borderRadius: '22px',
-            background: 'var(--accent-gradient)',
-            boxShadow: '0 8px 24px var(--accent-glow)',
-            marginBottom: '16px',
-            transform: 'rotate(-2deg)'
-          }}>
-            <MessageSquare size={32} color="#fff" />
+          <div style={{ display: 'inline-block', marginBottom: '14px' }}>
+            <RaabtaLogoMark size={72} glow={true} />
           </div>
           <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.03em' }}>
             Raabta
           </h2>
           <p style={{ color: 'var(--accent-primary)', fontSize: '0.88rem', fontWeight: '600', letterSpacing: '0.01em' }}>
-            Jahan baatein judti hain
+            Feel Connected.
           </p>
         </div>
 

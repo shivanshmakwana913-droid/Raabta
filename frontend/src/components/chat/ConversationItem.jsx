@@ -1,5 +1,6 @@
 import { formatConversationTime } from '../../utils/dateFormatter';
 import { Image as ImageIcon, Users, Mic, Phone, Video } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
 
 const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) => {
   const isGroup = conversation.type === 'group';
@@ -20,8 +21,8 @@ const ConversationItem = ({ conversation, currentUserId, isSelected, onClick }) 
     : otherUser?.name || otherUser?.username || 'Unknown User';
 
   const avatarUrl = isGroup
-    ? conversation.groupAvatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(displayName)}`
-    : otherUser?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${otherUser?.username || 'user'}`;
+    ? getMediaUrl(conversation.groupAvatar) || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(displayName)}`
+    : getMediaUrl(otherUser?.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${otherUser?.username || 'user'}`;
 
   const renderLastMessagePreview = () => {
     if (!lastMessage) {

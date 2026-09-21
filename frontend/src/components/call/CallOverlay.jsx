@@ -18,11 +18,13 @@ const CallOverlay = () => {
     errorMessage,
     localStreamRef,
     remoteStreamRef,
+    remoteStream,
     isCameraOff
   } = useCall();
 
   const localVideoRef = useRef(null);
   const remoteVideoRef = useRef(null);
+  const remoteAudioRef = useRef(null);
 
   // Bind local stream to localVideoRef
   useEffect(() => {
@@ -31,12 +33,18 @@ const CallOverlay = () => {
     }
   }, [localStreamRef.current, callState, isCameraOff]);
 
-  // Bind remote stream to remoteVideoRef
+  // Bind remote stream to remoteVideoRef & remoteAudioRef
   useEffect(() => {
     if (remoteVideoRef.current && remoteStreamRef.current) {
       remoteVideoRef.current.srcObject = remoteStreamRef.current;
     }
-  }, [remoteStreamRef.current, callState]);
+    if (remoteAudioRef.current && remoteStreamRef.current) {
+      remoteAudioRef.current.srcObject = remoteStreamRef.current;
+      remoteAudioRef.current.play().catch((err) => {
+        console.warn('[CallOverlay] Autoplay audio error:', err.message);
+      });
+    }
+  }, [remoteStreamRef.current, remoteStream, callState]);
 
   if (callState === 'IDLE') return null;
 
@@ -57,6 +65,8 @@ const CallOverlay = () => {
       color: '#fff',
       overflow: 'hidden'
     }}>
+      {/* Hidden Audio Element for Playing Remote Audio in Audio & Video Calls */}
+      <audio ref={remoteAudioRef} autoPlay playsInline style={{ display: 'none' }} />
       {/* Background Remote Video for Video Call */}
       {isVideo && (callState === 'CONNECTED' || callState === 'CONNECTING') && (
         <div style={{

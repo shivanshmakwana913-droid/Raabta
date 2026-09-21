@@ -1,9 +1,10 @@
 import { useState, useEffect } from 'react';
 import { Search, LogOut, MessageSquare, UserPlus, X, Settings, Users, Bell, BellOff, Sun, Moon } from 'lucide-react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import ConversationItem from './ConversationItem';
 import { formatConversationTime } from '../../utils/dateFormatter';
 import { SidebarSkeleton } from '../common/RaabtaLoader';
+import { RaabtaLogoMark } from '../common/RaabtaLogo';
 
 const Sidebar = ({
   currentUser,
@@ -163,9 +164,31 @@ const Sidebar = ({
       background: 'var(--bg-secondary)',
       borderRight: '1px solid var(--border-color)'
     }}>
-      {/* Sidebar Header */}
+      {/* Brand Header Bar */}
       <div style={{
-        padding: '16px 20px',
+        padding: '12px 20px',
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        background: 'linear-gradient(90deg, rgba(99, 102, 241, 0.08) 0%, rgba(168, 85, 247, 0.08) 100%)',
+        borderBottom: '1px solid rgba(255, 255, 255, 0.06)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <RaabtaLogoMark size={32} glow={true} />
+          <div>
+            <h2 style={{ fontSize: '1.15rem', fontWeight: '800', color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em', lineHeight: 1 }}>
+              Raabta
+            </h2>
+            <span style={{ fontSize: '0.68rem', fontWeight: '600', color: 'var(--accent-primary)', letterSpacing: '0.03em' }}>
+              Feel Connected.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Sidebar Header (User Profile & Actions) */}
+      <div style={{
+        padding: '14px 20px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
@@ -179,7 +202,7 @@ const Sidebar = ({
         >
           <div style={{ position: 'relative' }}>
             <img
-              src={currentUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`}
+              src={getMediaUrl(currentUser.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${currentUser.username}`}
               alt={currentUser.name}
               style={{
                 width: '42px',
@@ -456,7 +479,7 @@ const Sidebar = ({
                   className="search-result-item"
                 >
                   <img
-                    src={user.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
+                    src={getMediaUrl(user.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${user.username}`}
                     alt={user.name}
                     style={{ width: '40px', height: '40px', borderRadius: '50%', objectFit: 'cover' }}
                   />

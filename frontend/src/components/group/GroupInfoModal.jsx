@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Users, UserPlus, UserMinus, Edit2, Check, Shield, AlertCircle, Search } from 'lucide-react';
+import { X, UserPlus, UserMinus, Edit2, Check, Shield, AlertCircle, Search } from 'lucide-react';
 import api from '../../services/api';
 import { RaabtaLoader } from '../common/RaabtaLoader';
 

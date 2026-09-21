@@ -1,4 +1,5 @@
 import React from 'react';
+import { RaabtaLogoMark } from './RaabtaLogo';
 
 /**
  * Raabta Branded Loader Component
@@ -8,7 +9,7 @@ import React from 'react';
  *  - button: Compact white/accent spinner for action buttons
  *  - skeleton: Chat/Sidebar loading skeleton pulse UI
  */
-export const RaabtaLoader = ({ variant = 'inline', message = 'Loading...', size = 'medium' }) => {
+export const RaabtaLoader = ({ variant = 'inline', message = 'Loading...', size = 'medium', isExiting = false }) => {
   if (variant === 'button') {
     return (
       <span className="raabta-button-spinner" aria-label="Loading">
@@ -22,30 +23,16 @@ export const RaabtaLoader = ({ variant = 'inline', message = 'Loading...', size 
 
   if (variant === 'fullPage') {
     return (
-      <div className="raabta-fullpage-loader" role="status" aria-label="Loading Raabta">
+      <div className={`raabta-fullpage-loader ${isExiting ? 'zoom-out-exit' : ''}`} role="status" aria-label="Loading Raabta">
         <div className="raabta-brand-pulse-container">
           <div className="raabta-pulse-ring ring-1"></div>
           <div className="raabta-pulse-ring ring-2"></div>
           <div className="raabta-brand-logo-mark">
-            <svg width="40" height="40" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M10 28V12C10 9.79086 11.7909 8 14 8H26C28.2091 8 30 9.79086 30 12V22C30 24.2091 28.2091 26 26 26H16L10 28Z" stroke="url(#raabta-grad-1)" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" />
-              <path d="M15 15H25" stroke="url(#raabta-grad-2)" strokeWidth="2.5" strokeLinecap="round" />
-              <path d="M15 19H21" stroke="url(#raabta-grad-2)" strokeWidth="2.5" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="raabta-grad-1" x1="10" y1="8" x2="30" y2="28" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#6366F1" />
-                  <stop offset="1" stopColor="#A855F7" />
-                </linearGradient>
-                <linearGradient id="raabta-grad-2" x1="15" y1="15" x2="25" y2="19" gradientUnits="userSpaceOnUse">
-                  <stop stopColor="#818CF8" />
-                  <stop offset="1" stopColor="#C084FC" />
-                </linearGradient>
-              </defs>
-            </svg>
+            <RaabtaLogoMark size={54} glow={true} />
           </div>
         </div>
         <h2 className="raabta-brand-title">Raabta</h2>
-        <p className="raabta-brand-subtitle">Jahan baatein judti hain</p>
+        <p className="raabta-brand-subtitle">Feel Connected.</p>
         <div className="raabta-loading-bar-wrapper">
           <div className="raabta-loading-bar-fill"></div>
         </div>

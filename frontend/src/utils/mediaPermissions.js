@@ -40,23 +40,4 @@ export const requestMediaPermissions = async (options = { audio: true, video: tr
   }
 };
 
-/**
- * Check current permissions state using Permission API if supported
- */
-export const getMediaPermissionsState = async () => {
-  if (typeof window === 'undefined' || !navigator.permissions) {
-    return { mic: 'unknown', camera: 'unknown' };
-  }
 
-  try {
-    const micStatus = await navigator.permissions.query({ name: 'microphone' }).catch(() => null);
-    const cameraStatus = await navigator.permissions.query({ name: 'camera' }).catch(() => null);
-
-    return {
-      mic: micStatus ? micStatus.state : 'unknown', // 'granted' | 'prompt' | 'denied'
-      camera: cameraStatus ? cameraStatus.state : 'unknown'
-    };
-  } catch (e) {
-    return { mic: 'unknown', camera: 'unknown' };
-  }
-};

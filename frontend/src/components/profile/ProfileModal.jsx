@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, User, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, AtSign, Camera, Upload } from 'lucide-react';
-import api from '../../services/api';
+import { X, Mail, Smile, Image, AlertCircle, CheckCircle2, Save, RefreshCw, AtSign, Camera } from 'lucide-react';
+import api, { getMediaUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { RaabtaLoader } from '../common/RaabtaLoader';
 
@@ -253,7 +253,7 @@ const ProfileModal = ({ onClose }) => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
             <div style={{ position: 'relative' }}>
               <img
-                src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
+                src={getMediaUrl(avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                 alt="Avatar Preview"
                 style={{
                   width: '96px',

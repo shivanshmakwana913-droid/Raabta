@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, Video, Download } from 'lucide-react';
-import api from '../../services/api';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download } from 'lucide-react';
+import api, { getMediaUrl } from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { useCall } from '../../context/CallContext';
 import { formatTime, formatLastSeen } from '../../utils/dateFormatter';
@@ -72,8 +72,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   const headerName = isGroup ? conversation.groupName || 'Group Chat' : recipient?.name || recipient?.username;
   const headerAvatar = isGroup
-    ? conversation.groupAvatar || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(headerName)}`
-    : recipient?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${recipient?.username || 'user'}`;
+    ? getMediaUrl(conversation.groupAvatar) || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(headerName)}`
+    : getMediaUrl(recipient?.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${recipient?.username || 'user'}`;
 
   const scrollToBottom = (behavior = 'smooth') => {
     messagesEndRef.current?.scrollIntoView({ behavior });
@@ -217,15 +217,14 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           return [...prev, newMessage];
         });
 
-        // Play sound if message is from another user
+        // Handle incoming message read receipt & notification
         const senderId = typeof newMessage.sender === 'object' ? newMessage.sender?._id : newMessage.sender;
         if (senderId && senderId.toString() !== currentUser._id.toString()) {
           playReceiveMessageSound();
-        }
-
-        socket.emit('mark_messages_seen', { conversationId: conversation._id });
-        if (onMarkConversationSeen) {
-          onMarkConversationSeen(conversation._id);
+          socket.emit('mark_messages_seen', { conversationId: conversation._id });
+          if (onMarkConversationSeen) {
+            onMarkConversationSeen(conversation._id);
+          }
         }
 
         if (onUpdateLastMessage) {
@@ -259,7 +258,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
 
     const handleMessagesSeen = (data) => {
-      if (data.conversationId === conversation._id) {
+      const seenByUserId = (data.seenBy?._id || data.seenBy)?.toString();
+      if (data.conversationId === conversation._id && seenByUserId && seenByUserId !== currentUser._id.toString()) {
         const seenTime = data.seenAt || new Date().toISOString();
         setMessages((prev) =>
           prev.map((msg) =>
@@ -1060,9 +1060,9 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                       /* Image Message View */
                       <div style={{ borderRadius: '14px', overflow: 'hidden', cursor: 'pointer', position: 'relative' }}>
                         <img
-                          src={msg.imageUrl}
+                          src={getMediaUrl(msg.imageUrl)}
                           alt="Shared attachment"
-                          onClick={() => setFullImageViewUrl(msg.imageUrl)}
+                          onClick={() => setFullImageViewUrl(getMediaUrl(msg.imageUrl))}
                           style={{
                             width: '100%',
                             maxHeight: '280px',
@@ -1106,15 +1106,43 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                       </div>
                     ) : msg.messageType === 'call' ? (
                       /* Call Message View */
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '2px 4px' }}>
-                        {msg.callType === 'video' ? (
-                          <Video size={18} style={{ color: msg.callStatus === 'missed' ? '#ef4444' : '#a855f7' }} />
-                        ) : (
-                          <Phone size={18} style={{ color: msg.callStatus === 'missed' ? '#ef4444' : '#10b981' }} />
-                        )}
-                        <span style={{ fontSize: '0.88rem', fontWeight: 600 }}>
-                          {msg.content || `${msg.callType === 'video' ? 'Video' : 'Audio'} call`}
-                        </span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '4px 6px' }}>
+                        <div style={{
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '50%',
+                          background: msg.callStatus === 'missed' || msg.callStatus === 'declined' ? 'rgba(239, 68, 68, 0.15)' : 'rgba(16, 185, 129, 0.15)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexShrink: 0
+                        }}>
+                          {msg.callType === 'video' ? (
+                            <Video size={18} style={{ color: msg.callStatus === 'missed' ? '#ef4444' : '#a855f7' }} />
+                          ) : msg.callStatus === 'missed' ? (
+                            <PhoneMissed size={18} style={{ color: '#ef4444' }} />
+                          ) : isMe ? (
+                            <PhoneOutgoing size={18} style={{ color: '#10b981' }} />
+                          ) : (
+                            <PhoneIncoming size={18} style={{ color: '#10b981' }} />
+                          )}
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column' }}>
+                          <span style={{ fontSize: '0.9rem', fontWeight: 700, color: isMe ? '#ffffff' : 'var(--text-primary)' }}>
+                            {msg.content || `${msg.callType === 'video' ? 'Video' : 'Audio'} call`}
+                          </span>
+                          <span style={{ fontSize: '0.75rem', opacity: 0.85, marginTop: '2px' }}>
+                            {msg.callStatus === 'missed'
+                              ? 'Missed call'
+                              : msg.callStatus === 'declined'
+                              ? 'Declined'
+                              : msg.callStatus === 'busy'
+                              ? 'Line busy'
+                              : isMe
+                              ? 'Outgoing call'
+                              : 'Incoming call'}
+                          </span>
+                        </div>
                       </div>
                     ) : (
                       /* Text Message View */
@@ -1611,7 +1639,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           </div>
 
           <img
-            src={fullImageViewUrl}
+            src={getMediaUrl(fullImageViewUrl)}
             alt="Full view"
             style={{
               maxWidth: '92vw',

@@ -47,4 +47,17 @@ api.interceptors.response.use(
   }
 );
 
+export const getMediaUrl = (url) => {
+  if (!url || typeof url !== 'string') return '';
+  if (url.startsWith('http://localhost:5000') || url.startsWith('http://127.0.0.1:5000')) {
+    const backendOrigin = getApiBaseUrl().replace(/\/api\/?$/, '');
+    return url.replace(/^http:\/\/(localhost|127\.0\.0\.1):5000/, backendOrigin);
+  }
+  if (url.startsWith('/uploads/')) {
+    const backendOrigin = getApiBaseUrl().replace(/\/api\/?$/, '');
+    return `${backendOrigin}${url}`;
+  }
+  return url;
+};
+
 export default api;

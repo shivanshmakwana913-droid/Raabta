@@ -3,7 +3,7 @@ import {
   X, User, Lock, Shield, Trash2, Save, RefreshCw, AlertCircle, CheckCircle2,
   Eye, LogOut, UserX, AtSign, Smile, Mail, Phone, KeyRound, Check, Camera, Mic, Video, ShieldCheck
 } from 'lucide-react';
-import api from '../../services/api';
+import api, { getMediaUrl } from '../../services/api';
 import { useAuth } from '../../context/AuthContext';
 import { RaabtaLoader } from '../common/RaabtaLoader';
 import { requestMediaPermissions } from '../../utils/mediaPermissions';
@@ -546,7 +546,7 @@ const SettingsModal = ({ onClose }) => {
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px', marginBottom: '8px' }}>
                   <div style={{ position: 'relative' }}>
                     <img
-                      src={avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
+                      src={getMediaUrl(avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${username || 'user'}`}
                       alt="Avatar"
                       style={{
                         width: '96px',
@@ -1066,7 +1066,7 @@ const SettingsModal = ({ onClose }) => {
                       >
                         <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
                           <img
-                            src={bu.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${bu.username}`}
+                            src={getMediaUrl(bu.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${bu.username}`}
                             alt={bu.name}
                             style={{ width: '36px', height: '36px', borderRadius: '50%' }}
                           />

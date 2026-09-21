@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Smile, Search, Clock, X, Heart, Coffee, Star, Compass, UserCheck } from 'lucide-react';
+import { Smile, Search, Clock, X, Heart, Coffee, Compass, UserCheck } from 'lucide-react';
 
 const EMOJI_CATEGORIES = [
   {

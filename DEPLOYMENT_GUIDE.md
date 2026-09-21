@@ -29,7 +29,7 @@ This guide details how to get a **permanent, zero-barrier HTTPS link** for your 
 4. Click **Deploy**!
 5. Vercel gives you a permanent HTTPS link (e.g., `https://raabta-chat.vercel.app`).
 
-> 🌟 **Result**: You get a permanent, beautiful `https://raabta-chat.vercel.app` link. Share it with anyone, anywhere in the world. Camera, Microphone, WebSockets, Audio/Video calls work 100% seamlessly on any smartphone!
+> 🌟 **Result**: You get a permanent, beautiful `https://raabta-chat.vercel.app` link. Share it with anyone, anywhere in the worlar  d. Camera, Microphone, WebSockets, Audio/Video calls work 100% seamlessly on any smartphone!
 
 ---
 

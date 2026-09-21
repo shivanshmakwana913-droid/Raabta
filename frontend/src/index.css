@@ -257,6 +257,19 @@ select:focus-visible,
   align-items: center;
   justify-content: center;
   padding: 24px;
+  transition: opacity 0.45s cubic-bezier(0.4, 0, 0.2, 1), transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+
+.raabta-fullpage-loader.zoom-out-exit {
+  opacity: 0;
+  transform: scale(1.25);
+  pointer-events: none;
+}
+
+.raabta-fullpage-loader.zoom-out-exit .raabta-brand-pulse-container {
+  transform: scale(0.65);
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 .raabta-brand-pulse-container {
@@ -285,16 +298,23 @@ select:focus-visible,
 .raabta-brand-logo-mark {
   position: relative;
   z-index: 2;
-  width: 56px;
-  height: 56px;
-  border-radius: 18px;
-  background: var(--bg-secondary);
-  border: 1px solid var(--border-color-strong);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 8px 24px var(--accent-glow);
-  animation: logoFloat 3s ease-in-out infinite;
+  animation: logoFloat 3.5s ease-in-out infinite;
+}
+
+.raabta-logo-mark-wrapper {
+  transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), filter 0.3s ease;
+}
+
+.raabta-logo-mark-wrapper:hover {
+  transform: scale(1.06) rotate(-2deg);
+}
+
+.raabta-logo-mark-wrapper.has-glow .raabta-logo-svg,
+.raabta-logo-mark-wrapper.has-glow .raabta-logo-img {
+  filter: drop-shadow(0 6px 20px rgba(99, 102, 241, 0.45));
 }
 
 .raabta-brand-title {

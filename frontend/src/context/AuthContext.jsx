@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect } from 'react';
 import api from '../services/api';
+import { RaabtaLoader } from '../components/common/RaabtaLoader';
 
 const AuthContext = createContext();
 
@@ -7,14 +8,29 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('chat_token') || null);
   const [loading, setLoading] = useState(true);
+  const [isExiting, setIsExiting] = useState(false);
   const [error, setError] = useState(null);
 
   // Auto-login / Restore session on initial load
   useEffect(() => {
     const fetchCurrentUser = async () => {
+      const startTime = Date.now();
+
+      const finishLoading = () => {
+        const elapsed = Date.now() - startTime;
+        const delay = Math.max(0, 1600 - elapsed); // Hold loader for ~1.6s
+
+        setTimeout(() => {
+          setIsExiting(true);
+          setTimeout(() => {
+            setLoading(false);
+          }, 450); // 450ms smooth zoom-out animation
+        }, delay);
+      };
+
       const storedToken = localStorage.getItem('chat_token');
       if (!storedToken) {
-        setLoading(false);
+        finishLoading();
         return;
       }
 
@@ -24,14 +40,13 @@ export const AuthProvider = ({ children }) => {
         setToken(storedToken);
       } catch (err) {
         console.error('[Auth Restore Error]:', err.response?.data?.message || err.message);
-        // Only clear token if authentication explicitly failed (401), not on temporary DB 503 errors
         if (err.response?.status === 401) {
           localStorage.removeItem('chat_token');
           setToken(null);
         }
         setUser(null);
       } finally {
-        setLoading(false);
+        finishLoading();
       }
     };
 
@@ -140,6 +155,7 @@ export const AuthProvider = ({ children }) => {
       }}
     >
       {children}
+      {loading && <RaabtaLoader variant="fullPage" isExiting={isExiting} />}
     </AuthContext.Provider>
   );
 };
