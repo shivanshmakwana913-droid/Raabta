@@ -57,6 +57,10 @@ export const getMediaUrl = (url) => {
     const backendOrigin = getApiBaseUrl().replace(/\/api\/?$/, '');
     return `${backendOrigin}${url}`;
   }
+  if (url.startsWith('uploads/')) {
+    const backendOrigin = getApiBaseUrl().replace(/\/api\/?$/, '');
+    return `${backendOrigin}/${url}`;
+  }
   return url;
 };
 

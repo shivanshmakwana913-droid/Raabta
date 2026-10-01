@@ -29,12 +29,14 @@ const connectDB = async () => {
     }
   }
 
+  let conn;
   try {
-    const conn = await mongoose.connect(mongoURI, {
-      serverSelectionTimeoutMS: 4000 // Fast 4-second timeout
+    conn = await mongoose.connect(mongoURI, {
+      serverSelectionTimeoutMS: 4000,
+      connectTimeoutMS: 4000,
+      socketTimeoutMS: 4000
     });
     console.log(`[MongoDB Connected]: ${conn.connection.host}`);
-    return conn;
   } catch (error) {
     console.warn(`[Primary MongoDB Atlas Connection Failed]: ${error.message}`);
     console.warn('[Falling back to MongoMemoryServer for development mode...]');
@@ -43,14 +45,47 @@ const connectDB = async () => {
       const { MongoMemoryServer } = require('mongodb-memory-server');
       const mongoServer = await MongoMemoryServer.create();
       const memoryUri = mongoServer.getUri();
-      const conn = await mongoose.connect(memoryUri);
+      conn = await mongoose.connect(memoryUri);
       console.log(`[MongoDB Memory Server Connected Successfully]: ${memoryUri}`);
-      return conn;
     } catch (fallbackErr) {
       console.error(`[Memory Server Fallback Failed]: ${fallbackErr.message}`);
       throw error;
     }
   }
+
+  // Seed demo users if database is fresh/empty
+  try {
+    const User = require('../models/User');
+    const userCount = await User.countDocuments();
+    if (userCount === 0) {
+      console.log('[Seeding Default Demo Users...]');
+      await User.create([
+        {
+          name: 'Demo User',
+          username: 'demouser',
+          normalizedUsername: 'demouser',
+          email: 'demo@raabta.com',
+          password: 'password123',
+          phoneNumber: '+1234567890',
+          phoneNumberVerified: true
+        },
+        {
+          name: 'Shivansh Makwana',
+          username: 'shivansh',
+          normalizedUsername: 'shivansh',
+          email: 'shivansh@raabta.com',
+          password: 'password123',
+          phoneNumber: '+919876543210',
+          phoneNumberVerified: true
+        }
+      ]);
+      console.log('[Demo Users Seeded]: username: "demouser" / "shivansh", password: "password123"');
+    }
+  } catch (seedErr) {
+    console.warn('[Seed Warning]:', seedErr.message);
+  }
+
+  return conn;
 };
 
 module.exports = connectDB;

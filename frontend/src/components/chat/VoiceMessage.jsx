@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Play, Pause, AlertCircle, Download } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
 
 export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, isMe = false }) {
   const [isPlaying, setIsPlaying] = useState(false);
@@ -10,10 +11,11 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
   const [hasError, setHasError] = useState(false);
 
   const audioRef = useRef(null);
+  const resolvedAudioUrl = getMediaUrl(audioUrl);
 
   const handleDownload = async () => {
     try {
-      const response = await fetch(audioUrl);
+      const response = await fetch(resolvedAudioUrl);
       const blob = await response.blob();
       const blobUrl = URL.createObjectURL(blob);
       const a = document.createElement('a');
@@ -24,12 +26,17 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
       document.body.removeChild(a);
       setTimeout(() => URL.revokeObjectURL(blobUrl), 5000);
     } catch {
-      window.open(audioUrl, '_blank');
+      window.open(resolvedAudioUrl, '_blank');
     }
   };
 
   useEffect(() => {
-    const audio = new Audio(audioUrl);
+    if (!resolvedAudioUrl) {
+      setHasError(true);
+      setIsLoading(false);
+      return;
+    }
+    const audio = new Audio(resolvedAudioUrl);
     audio.preload = 'metadata';
     audioRef.current = audio;
 
@@ -68,7 +75,7 @@ export default function VoiceMessage({ audioUrl, duration: initialDuration = 0, 
       audio.removeEventListener('ended', handleEnded);
       audio.removeEventListener('error', handleError);
     };
-  }, [audioUrl]);
+  }, [resolvedAudioUrl]);
 
   const togglePlay = () => {
     if (!audioRef.current || hasError) return;

@@ -1,4 +1,5 @@
 import { X, MessageSquare } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
 
 const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
   if (!toasts || toasts.length === 0) return null;
@@ -52,8 +53,12 @@ const NotificationToast = ({ toasts, onSelectToast, onCloseToast }) => {
           <div style={{ position: 'relative', flexShrink: 0 }}>
             {toast.avatar ? (
               <img
-                src={toast.avatar}
+                src={getMediaUrl(toast.avatar)}
                 alt={toast.title}
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${toast.username || 'user'}`;
+                }}
                 style={{
                   width: '40px',
                   height: '40px',

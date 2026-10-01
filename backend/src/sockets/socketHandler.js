@@ -2,6 +2,7 @@ const jwt = require('jsonwebtoken');
 const User = require('../models/User');
 const Conversation = require('../models/Conversation');
 const Message = require('../models/Message');
+const Plan = require('../models/Plan');
 const {
   createMessageService,
   editMessageService,
@@ -550,6 +551,127 @@ const initSocketServer = (io) => {
           callStatus: finalStatus,
           callDuration: duration
         });
+      }
+    });
+
+    // Socket Event: Real-Time Plan Creation
+    socket.on('create_plan', async (data, callback) => {
+      try {
+        const { conversationId, title, date } = data || {};
+        if (!title || !title.trim()) {
+          if (callback) callback({ status: 'error', message: 'Plan title is required' });
+          return;
+        }
+        if (!date || isNaN(new Date(date).getTime())) {
+          if (callback) callback({ status: 'error', message: 'Valid plan date is required' });
+          return;
+        }
+        const conversation = await Conversation.findById(conversationId);
+        if (!conversation) {
+          if (callback) callback({ status: 'error', message: 'Conversation not found' });
+          return;
+        }
+        const isParticipant = conversation.participants.some(
+          (p) => p.toString() === socket.user._id.toString()
+        );
+        if (!isParticipant) {
+          if (callback) callback({ status: 'error', message: 'Unauthorized room access' });
+          return;
+        }
+
+        const plan = await Plan.create({
+          conversation: conversationId,
+          creator: socket.user._id,
+          title: title.trim(),
+          date: new Date(date),
+          responses: [{ user: socket.user._id, status: 'going' }]
+        });
+
+        const message = await Message.create({
+          conversation: conversationId,
+          sender: socket.user._id,
+          content: title.trim(),
+          messageType: 'plan',
+          plan: plan._id,
+          deliveredAt: new Date()
+        });
+
+        await Conversation.findByIdAndUpdate(conversationId, {
+          lastMessage: message._id,
+          updatedAt: new Date()
+        });
+
+        const populatedPlan = await Plan.findById(plan._id)
+          .populate('creator', 'name username avatar')
+          .populate('responses.user', 'name username avatar');
+
+        const populatedMessage = await Message.findById(message._id)
+          .populate('sender', 'name username avatar')
+          .populate({
+            path: 'plan',
+            populate: [
+              { path: 'creator', select: 'name username avatar' },
+              { path: 'responses.user', select: 'name username avatar' }
+            ]
+          });
+
+        io.to(conversationId).emit('new_message', populatedMessage);
+        io.to(conversationId).emit('plan_created', populatedPlan);
+
+        if (callback) callback({ status: 'ok', data: { plan: populatedPlan, message: populatedMessage } });
+      } catch (err) {
+        console.error('[Socket create_plan error]:', err.message);
+        if (callback) callback({ status: 'error', message: err.message });
+      }
+    });
+
+    // Socket Event: Real-Time Plan Response
+    socket.on('respond_plan', async (data, callback) => {
+      try {
+        const { planId, status } = data || {};
+        const validStatuses = ['going', 'maybe', 'cant_go'];
+        if (!status || !validStatuses.includes(status)) {
+          if (callback) callback({ status: 'error', message: 'Invalid response status' });
+          return;
+        }
+        const plan = await Plan.findById(planId);
+        if (!plan) {
+          if (callback) callback({ status: 'error', message: 'Plan not found' });
+          return;
+        }
+        const conversation = await Conversation.findById(plan.conversation);
+        if (!conversation) {
+          if (callback) callback({ status: 'error', message: 'Conversation not found' });
+          return;
+        }
+        const isParticipant = conversation.participants.some(
+          (p) => p.toString() === socket.user._id.toString()
+        );
+        if (!isParticipant) {
+          if (callback) callback({ status: 'error', message: 'Unauthorized plan access' });
+          return;
+        }
+
+        const existingIndex = plan.responses.findIndex(
+          (r) => r.user.toString() === socket.user._id.toString()
+        );
+        if (existingIndex > -1) {
+          plan.responses[existingIndex].status = status;
+        } else {
+          plan.responses.push({ user: socket.user._id, status });
+        }
+        await plan.save();
+
+        const populatedPlan = await Plan.findById(plan._id)
+          .populate('creator', 'name username avatar')
+          .populate('responses.user', 'name username avatar');
+
+        io.to(plan.conversation.toString()).emit('plan_updated', populatedPlan);
+
+        if (callback) callback({ status: 'ok', data: populatedPlan });
+      } catch (err) {
+        console.error('[Socket respond_plan error]:', err.message);
+        if (callback) callback({ status: 'error', message: err.message });
       }
     });
 

@@ -103,7 +103,9 @@ const uploadImage = async (req, res, next) => {
       throw new Error('Please provide a valid image file');
     }
 
-    const uploadResult = await uploadToCloudinary(req.file.buffer, 'chat_uploads');
+    const path = require('path');
+    const ext = req.file.originalname ? path.extname(req.file.originalname).replace('.', '') : 'jpg';
+    const uploadResult = await uploadToCloudinary(req.file.buffer, 'chat_uploads', ext);
 
     res.status(200).json({
       status: 'ok',
@@ -125,7 +127,9 @@ const uploadAudio = async (req, res, next) => {
       throw new Error('Please provide a valid audio recording file');
     }
 
-    const uploadResult = await uploadAudioToCloudinary(req.file.buffer, 'chat_voice_messages');
+    const path = require('path');
+    const ext = req.file.originalname ? path.extname(req.file.originalname).replace('.', '') : 'webm';
+    const uploadResult = await uploadAudioToCloudinary(req.file.buffer, 'chat_voice_messages', ext);
 
     res.status(200).json({
       status: 'ok',
@@ -186,6 +190,13 @@ const getMessages = async (req, res, next) => {
         populate: { path: 'sender', select: 'name username avatar' }
       })
       .populate('reactions.user', 'name username avatar')
+      .populate({
+        path: 'plan',
+        populate: [
+          { path: 'creator', select: 'name username avatar' },
+          { path: 'responses.user', select: 'name username avatar' }
+        ]
+      })
       .sort({ createdAt: 1 })
       .skip(skip)
       .limit(limit);

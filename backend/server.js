@@ -13,6 +13,7 @@ const userRoutes = require('./src/routes/userRoutes');
 const conversationRoutes = require('./src/routes/conversationRoutes');
 const messageRoutes = require('./src/routes/messageRoutes');
 const reportRoutes = require('./src/routes/reportRoutes');
+const planRoutes = require('./src/routes/planRoutes');
 const { notFound, errorHandler } = require('./src/middleware/errorMiddleware');
 const initSocketServer = require('./src/sockets/socketHandler');
 
@@ -86,6 +87,7 @@ app.use('/api/users', checkDbConnection, userRoutes);
 app.use('/api/conversations', checkDbConnection, conversationRoutes);
 app.use('/api/messages', checkDbConnection, messageRoutes);
 app.use('/api/reports', checkDbConnection, reportRoutes);
+app.use('/api/plans', checkDbConnection, planRoutes);
 
 // Error Handling Middleware
 app.use(notFound);
@@ -99,6 +101,7 @@ const io = new Server(server, {
     credentials: true
   }
 });
+app.set('io', io);
 
 // Sequential Startup Function
 const startServer = async () => {

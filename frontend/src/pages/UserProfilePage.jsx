@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { ArrowLeft, Send, User, Calendar, ShieldCheck, AlertCircle, Flag, Share2, Copy, Check } from 'lucide-react';
-import api from '../services/api';
+import api, { getMediaUrl } from '../services/api';
 import { formatLastSeen } from '../utils/dateFormatter';
 import ReportModal from '../components/report/ReportModal';
 import { RaabtaLoader } from '../components/common/RaabtaLoader';
@@ -212,8 +212,12 @@ const UserProfilePage = () => {
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center', marginBottom: '24px' }}>
               <div style={{ position: 'relative', marginBottom: '16px' }}>
                 <img
-                  src={profileUser.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${profileUser.username}`}
+                  src={getMediaUrl(profileUser.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${profileUser.username}`}
                   alt={profileUser.name}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${profileUser.username}`;
+                  }}
                   style={{
                     width: '96px',
                     height: '96px',

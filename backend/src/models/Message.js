@@ -20,8 +20,13 @@ const messageSchema = new mongoose.Schema(
     },
     messageType: {
       type: String,
-      enum: ['text', 'image', 'gif', 'sticker', 'audio', 'call'],
+      enum: ['text', 'image', 'gif', 'sticker', 'audio', 'call', 'plan'],
       default: 'text'
+    },
+    plan: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'Plan',
+      default: null
     },
     imageUrl: {
       type: String,

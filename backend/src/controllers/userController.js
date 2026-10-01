@@ -255,7 +255,9 @@ const uploadAvatar = async (req, res, next) => {
     }
 
     const { uploadToCloudinary } = require('../config/cloudinary');
-    const uploadResult = await uploadToCloudinary(req.file.buffer, 'avatars');
+    const path = require('path');
+    const ext = req.file.originalname ? path.extname(req.file.originalname).replace('.', '') : 'jpg';
+    const uploadResult = await uploadToCloudinary(req.file.buffer, 'avatars', ext);
 
     const user = await User.findById(req.user._id);
     if (!user) {

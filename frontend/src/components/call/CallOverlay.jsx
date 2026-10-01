@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import { useCall } from '../../context/CallContext';
 import CallControls from './CallControls';
 import { Phone, Video, AlertCircle } from 'lucide-react';
+import { getMediaUrl } from '../../services/api';
 
 const formatDuration = (secs) => {
   const m = Math.floor(secs / 60);
@@ -156,8 +157,12 @@ const CallOverlay = () => {
         {(!isVideo || callState !== 'CONNECTED') && (
           <div style={{ position: 'relative' }}>
             <img
-              src={peerUser?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${peerUser?.username || 'user'}`}
+              src={getMediaUrl(peerUser?.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${peerUser?.username || 'user'}`}
               alt={peerUser?.name || 'User'}
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = `https://api.dicebear.com/7.x/bottts/svg?seed=${peerUser?.username || 'user'}`;
+              }}
               style={{
                 width: '120px',
                 height: '120px',

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download, Calendar } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { useCall } from '../../context/CallContext';
@@ -11,6 +11,8 @@ import StickerPicker from './StickerPicker';
 import EmojiPickerPopover from './EmojiPickerPopover';
 import VoiceMessage from './VoiceMessage';
 import VoiceRecorder from './VoiceRecorder';
+import PlanModal from './PlanModal';
+import PlanCard from './PlanCard';
 import { playSendMessageSound, playReceiveMessageSound, toggleSoundMute, getIsSoundMuted } from '../../utils/soundEffects';
 
 const ALLOWED_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -42,11 +44,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
   // Audio Sound state
   const [isMuted, setIsMuted] = useState(getIsSoundMuted());
 
-  // Media Pickers & Voice States (GIFs, Stickers, Emojis, Voice)
+  // Media Pickers & Voice States (GIFs, Stickers, Emojis, Voice, Plans)
   const [showGifPicker, setShowGifPicker] = useState(false);
   const [showStickerPicker, setShowStickerPicker] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(false);
   const [isRecordingVoice, setIsRecordingVoice] = useState(false);
+  const [showPlanModal, setShowPlanModal] = useState(false);
 
   // Scroll experience states & refs
   const [showScrollBottomBtn, setShowScrollBottomBtn] = useState(false);
@@ -119,6 +122,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
         if (fullImageViewUrl) setFullImageViewUrl(null);
+        else if (showPlanModal) setShowPlanModal(false);
         else if (isRecordingVoice) setIsRecordingVoice(false);
         else if (showEmojiPicker) setShowEmojiPicker(false);
         else if (showGifPicker) setShowGifPicker(false);
@@ -130,7 +134,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fullImageViewUrl, isRecordingVoice, showEmojiPicker, showGifPicker, showStickerPicker, activeReactionMenuMsgId, editingMessage, replyingToMessage]);
+  }, [fullImageViewUrl, showPlanModal, isRecordingVoice, showEmojiPicker, showGifPicker, showStickerPicker, activeReactionMenuMsgId, editingMessage, replyingToMessage]);
 
   // Lock body scroll when image lightbox is open
   useEffect(() => {
@@ -211,7 +215,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     if (!socket) return;
 
     const handleNewMessage = (newMessage) => {
-      if (newMessage.conversation.toString() === conversation._id.toString()) {
+      const msgConvId = (newMessage.conversation?._id || newMessage.conversation)?.toString();
+      if (msgConvId === conversation._id.toString()) {
         setMessages((prev) => {
           if (prev.some((m) => m._id === newMessage._id)) return prev;
           return [...prev, newMessage];
@@ -234,7 +239,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
 
     const handleMessageUpdated = (updatedMsg) => {
-      if (updatedMsg.conversation.toString() === conversation._id.toString()) {
+      const msgConvId = (updatedMsg.conversation?._id || updatedMsg.conversation)?.toString();
+      if (msgConvId === conversation._id.toString()) {
         setMessages((prev) =>
           prev.map((msg) => (msg._id === updatedMsg._id ? updatedMsg : msg))
         );
@@ -242,7 +248,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
 
     const handleMessageDeleted = (deletedMsg) => {
-      if (deletedMsg.conversation.toString() === conversation._id.toString()) {
+      const msgConvId = (deletedMsg.conversation?._id || deletedMsg.conversation)?.toString();
+      if (msgConvId === conversation._id.toString()) {
         setMessages((prev) =>
           prev.map((msg) => (msg._id === deletedMsg._id ? deletedMsg : msg))
         );
@@ -250,7 +257,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     };
 
     const handleMessageReactionUpdated = (reactedMsg) => {
-      if (reactedMsg.conversation.toString() === conversation._id.toString()) {
+      const msgConvId = (reactedMsg.conversation?._id || reactedMsg.conversation)?.toString();
+      if (msgConvId === conversation._id.toString()) {
         setMessages((prev) =>
           prev.map((msg) => (msg._id === reactedMsg._id ? reactedMsg : msg))
         );
@@ -290,6 +298,24 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       }
     };
 
+    const handlePlanCreated = (newPlan) => {
+      // Plan created real-time listener
+    };
+
+    const handlePlanUpdated = (updatedPlan) => {
+      const planConvId = (updatedPlan.conversation?._id || updatedPlan.conversation)?.toString();
+      if (planConvId === conversation._id.toString()) {
+        setMessages((prev) =>
+          prev.map((msg) => {
+            if (msg.plan && (msg.plan._id || msg.plan).toString() === updatedPlan._id.toString()) {
+              return { ...msg, plan: updatedPlan };
+            }
+            return msg;
+          })
+        );
+      }
+    };
+
     socket.on('new_message', handleNewMessage);
     socket.on('message_updated', handleMessageUpdated);
     socket.on('message_deleted', handleMessageDeleted);
@@ -297,6 +323,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     socket.on('messages_seen', handleMessagesSeen);
     socket.on('user_typing', handleUserTyping);
     socket.on('user_stopped_typing', handleUserStoppedTyping);
+    socket.on('plan_created', handlePlanCreated);
+    socket.on('plan_updated', handlePlanUpdated);
 
     return () => {
       socket.off('new_message', handleNewMessage);
@@ -306,6 +334,8 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
       socket.off('messages_seen', handleMessagesSeen);
       socket.off('user_typing', handleUserTyping);
       socket.off('user_stopped_typing', handleUserStoppedTyping);
+      socket.off('plan_created', handlePlanCreated);
+      socket.off('plan_updated', handlePlanUpdated);
     };
   }, [socket, conversation._id, currentUser._id, onUpdateLastMessage, onMarkConversationSeen]);
 
@@ -636,6 +666,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           <img
             src={headerAvatar}
             alt={headerName}
+            onError={(e) => {
+              e.currentTarget.onerror = null;
+              e.currentTarget.src = isGroup
+                ? `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(headerName)}`
+                : `https://api.dicebear.com/7.x/bottts/svg?seed=${recipient?.username || 'user'}`;
+            }}
             style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }}
           />
           {!isGroup && (
@@ -975,7 +1011,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                     ) : msg.messageType === 'audio' ? (
                       /* Voice Message View */
                       <VoiceMessage
-                        audioUrl={msg.audioUrl || msg.imageUrl}
+                        audioUrl={getMediaUrl(msg.audioUrl || msg.imageUrl)}
                         duration={msg.audioDuration || 0}
                         isMe={isMe}
                       />
@@ -1144,6 +1180,21 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                           </span>
                         </div>
                       </div>
+                    ) : msg.messageType === 'plan' || msg.plan ? (
+                      /* Plan Message View */
+                      <PlanCard
+                        plan={msg.plan}
+                        currentUser={currentUser}
+                        onPlanUpdated={(updatedPlan) => {
+                          setMessages((prev) =>
+                            prev.map((m) =>
+                              m.plan && (m.plan._id || m.plan).toString() === updatedPlan._id.toString()
+                                ? { ...m, plan: updatedPlan }
+                                : m
+                            )
+                          );
+                        }}
+                      />
                     ) : (
                       /* Text Message View */
                       <span style={{ fontSize: '0.92rem', lineHeight: '1.45' }}>
@@ -1480,6 +1531,26 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             <Sparkles size={20} />
           </button>
 
+          {/* Plan Button */}
+          <button
+            type="button"
+            onClick={() => {
+              setShowPlanModal(true);
+              setShowEmojiPicker(false);
+              setShowGifPicker(false);
+              setShowStickerPicker(false);
+            }}
+            aria-label="Create Plan"
+            title="Create Raabta Plan"
+            className="action-icon-btn"
+            style={{
+              color: showPlanModal ? 'var(--accent-primary)' : 'var(--text-muted)',
+              padding: '6px'
+            }}
+          >
+            <Calendar size={20} />
+          </button>
+
           {/* Voice Note Mic Button */}
           <button
             type="button"
@@ -1659,6 +1730,24 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           currentUser={currentUser}
           onClose={() => setIsGroupInfoOpen(false)}
           onGroupUpdated={onGroupUpdated}
+        />
+      )}
+
+      {/* Raabta Plan Modal */}
+      {showPlanModal && (
+        <PlanModal
+          conversation={conversation}
+          onClose={() => setShowPlanModal(false)}
+          onPlanCreated={(data) => {
+            if (data?.message) {
+              setMessages((prev) => {
+                if (prev.some((m) => m._id === data.message._id)) return prev;
+                return [...prev, data.message];
+              });
+              if (onUpdateLastMessage) onUpdateLastMessage(conversation._id, data.message);
+              scrollToBottom('smooth');
+            }
+          }}
         />
       )}
     </div>
