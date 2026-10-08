@@ -114,16 +114,7 @@ const LoginPage = () => {
   };
 
   return (
-    <div style={{
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      minHeight: '100vh',
-      padding: '24px 16px',
-      background: 'radial-gradient(circle at top left, #1e1b4b 0%, #0b0f19 70%)',
-      position: 'relative',
-      overflow: 'hidden'
-    }}>
+    <div className="auth-page-container">
       {/* Background Ambient Glow Orbs */}
       <div style={{
         position: 'absolute', top: '-120px', left: '-120px',
@@ -136,26 +127,14 @@ const LoginPage = () => {
         background: 'rgba(168, 85, 247, 0.15)', filter: 'blur(80px)', pointerEvents: 'none'
       }} />
 
-      <div className="glass-panel animate-slide-up auth-card" style={{
-        width: '100%',
-        maxWidth: '440px',
-        padding: '36px',
-        borderRadius: '28px',
-        boxShadow: 'var(--shadow-lg)',
-        position: 'relative',
-        zIndex: 1
-      }}>
+      <div className="glass-panel animate-slide-up auth-card">
         {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
-          <div style={{ display: 'inline-block', marginBottom: '14px' }}>
-            <RaabtaLogoMark size={72} glow={true} />
+        <div className="auth-header">
+          <div style={{ display: 'inline-block', marginBottom: '12px' }}>
+            <RaabtaLogoMark size={64} glow={true} />
           </div>
-          <h2 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'var(--text-primary)', marginBottom: '4px', letterSpacing: '-0.03em' }}>
-            Raabta
-          </h2>
-          <p style={{ color: 'var(--accent-primary)', fontSize: '0.88rem', fontWeight: '600', letterSpacing: '0.01em' }}>
-            Feel Connected.
-          </p>
+          <h2>Raabta</h2>
+          <p>Feel Connected.</p>
         </div>
 
         {/* Login Mode Selector Tabs */}
@@ -169,6 +148,7 @@ const LoginPage = () => {
         }}>
           <button
             type="button"
+            className="auth-mode-tab"
             onClick={() => {
               setLoginMode('credentials');
               setErrorMessage('');
@@ -191,6 +171,7 @@ const LoginPage = () => {
           </button>
           <button
             type="button"
+            className="auth-mode-tab"
             onClick={() => {
               setLoginMode('phone');
               setErrorMessage('');
