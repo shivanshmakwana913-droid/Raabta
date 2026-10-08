@@ -275,12 +275,21 @@ const searchMessages = async (req, res, next) => {
       return res.status(200).json({ messages: [] });
     }
 
-    const messages = await searchMessagesService({
+    const searchResult = await searchMessagesService({
       userId: req.user._id,
       query: q
     });
 
-    res.status(200).json({ messages });
+    if (Array.isArray(searchResult)) {
+      res.status(200).json({ messages: searchResult, tasks: [], decisions: [], plans: [] });
+    } else {
+      res.status(200).json({
+        messages: searchResult.messages || [],
+        tasks: searchResult.tasks || [],
+        decisions: searchResult.decisions || [],
+        plans: searchResult.plans || []
+      });
+    }
   } catch (error) {
     next(error);
   }

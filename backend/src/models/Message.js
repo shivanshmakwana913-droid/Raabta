@@ -91,6 +91,11 @@ const messageSchema = new mongoose.Schema(
     seenAt: {
       type: Date,
       default: null
+    },
+    category: {
+      type: String,
+      enum: ['important', 'task', 'payment', 'event', 'study', null],
+      default: null
     }
   },
   {
@@ -102,6 +107,7 @@ const messageSchema = new mongoose.Schema(
 messageSchema.index({ conversation: 1, createdAt: -1 });
 messageSchema.index({ conversation: 1, isDeleted: 1, createdAt: -1 });
 messageSchema.index({ conversation: 1, sender: 1, seenAt: 1 });
+messageSchema.index({ conversation: 1, category: 1 });
 
 const Message = mongoose.model('Message', messageSchema);
 

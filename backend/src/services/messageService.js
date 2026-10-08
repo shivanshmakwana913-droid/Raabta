@@ -297,6 +297,7 @@ const searchMessagesService = async ({ userId, query }) => {
   const escapedQuery = query.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
   // 1. Get all conversation IDs that current user belongs to
+  // 1. Get all conversation IDs that current user belongs to
   const userConversations = await Conversation.find({
     participants: { $elemMatch: { $eq: userId } }
   }).select('_id type groupName groupAvatar participants');
@@ -306,12 +307,59 @@ const searchMessagesService = async ({ userId, query }) => {
   }
 
   const convIds = userConversations.map((c) => c._id);
+  const rawQuery = query.trim();
 
-  // 2. Search non-deleted text messages matching the query
+  // Extract individual keywords (ignore short stop words like "kya", "ne", "wali", "ka", "ki")
+  const stopWords = new Set(['kya', 'ne', 'ko', 'se', 'hai', 'ka', 'ki', 'ke', 'wali', 'wala', 'par', 'me', 'in', 'is', 'the', 'to', 'of', 'and', 'a', 'an', 'did', 'said', 'told']);
+  const tokens = rawQuery
+    .toLowerCase()
+    .split(/\s+/)
+    .filter((t) => t.length > 1 && !stopWords.has(t));
+
+  const User = require('../models/User');
+
+  // Search matching senders if tokens match user names/usernames
+  let matchingSenderIds = [];
+  if (tokens.length > 0) {
+    const matchedUsers = await User.find({
+      $or: tokens.map((t) => ({
+        $or: [
+          { name: { $regex: t, $options: 'i' } },
+          { username: { $regex: t, $options: 'i' } }
+        ]
+      }))
+    }).select('_id');
+    matchingSenderIds = matchedUsers.map((u) => u._id);
+  }
+
+  // Categories map check
+  const knownCategories = ['important', 'task', 'payment', 'event', 'study'];
+  const matchedCategories = knownCategories.filter((cat) =>
+    tokens.some((t) => cat.includes(t) || t.includes(cat))
+  );
+
+  // Build $or criteria for content, sender, and categories
+  const orConditions = [
+    { content: { $regex: escapedQuery, $options: 'i' } }
+  ];
+
+  tokens.forEach((t) => {
+    orConditions.push({ content: { $regex: t, $options: 'i' } });
+  });
+
+  if (matchingSenderIds.length > 0) {
+    orConditions.push({ sender: { $in: matchingSenderIds } });
+  }
+
+  if (matchedCategories.length > 0) {
+    orConditions.push({ category: { $in: matchedCategories } });
+  }
+
+  // 2. Search non-deleted messages matching the criteria
   const messages = await Message.find({
     conversation: { $in: convIds },
     isDeleted: false,
-    content: { $regex: escapedQuery, $options: 'i' }
+    $or: orConditions
   })
     .sort({ createdAt: -1 })
     .limit(30)
@@ -325,7 +373,52 @@ const searchMessagesService = async ({ userId, query }) => {
       }
     });
 
-  return messages;
+  // 3. Search matching Tasks/Follow-ups, Decisions & Plans
+  const FollowUp = require('../models/FollowUp');
+  const Decision = require('../models/Decision');
+  const Plan = require('../models/Plan');
+
+  const tasks = await FollowUp.find({
+    conversation: { $in: convIds },
+    $or: [
+      { title: { $regex: escapedQuery, $options: 'i' } },
+      { note: { $regex: escapedQuery, $options: 'i' } }
+    ]
+  })
+    .limit(10)
+    .populate('user', 'name username avatar')
+    .populate({
+      path: 'message',
+      select: 'content sender messageType createdAt',
+      populate: { path: 'sender', select: 'name username avatar' }
+    });
+
+  const decisions = await Decision.find({
+    conversation: { $in: convIds },
+    decisionText: { $regex: escapedQuery, $options: 'i' }
+  })
+    .limit(10)
+    .populate('proposer', 'name username avatar')
+    .populate('confirmer', 'name username avatar')
+    .populate({
+      path: 'message',
+      select: 'content sender messageType createdAt',
+      populate: { path: 'sender', select: 'name username avatar' }
+    });
+
+  const plans = await Plan.find({
+    conversation: { $in: convIds },
+    title: { $regex: escapedQuery, $options: 'i' }
+  })
+    .limit(10)
+    .populate('creator', 'name username avatar');
+
+  return {
+    messages,
+    tasks,
+    decisions,
+    plans
+  };
 };
 
 module.exports = {

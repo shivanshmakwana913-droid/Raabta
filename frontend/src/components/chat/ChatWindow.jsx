@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download, Calendar } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download, Calendar, Tag, Bookmark, CheckSquare, ShieldCheck, Zap } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { useCall } from '../../context/CallContext';
@@ -13,6 +13,8 @@ import VoiceMessage from './VoiceMessage';
 import VoiceRecorder from './VoiceRecorder';
 import PlanModal from './PlanModal';
 import PlanCard from './PlanCard';
+import RaabtaIntelligenceModal from './RaabtaIntelligenceModal';
+import ConvertToActionModal from './ConvertToActionModal';
 import { playSendMessageSound, playReceiveMessageSound, toggleSoundMute, getIsSoundMuted } from '../../utils/soundEffects';
 
 const ALLOWED_EMOJIS = ['👍', '❤️', '😂', '😮', '😢', '🙏'];
@@ -31,6 +33,13 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
   const [editingMessage, setEditingMessage] = useState(null);
   const [activeReactionMenuMsgId, setActiveReactionMenuMsgId] = useState(null);
   const [activeActionMenuMsgId, setActiveActionMenuMsgId] = useState(null);
+
+  // Raabta Intelligence & Action States
+  const [showIntelligenceModal, setShowIntelligenceModal] = useState(false);
+  const [intelligenceTab, setIntelligenceTab] = useState('dashboard');
+  const [activeCategoryMenuMsgId, setActiveCategoryMenuMsgId] = useState(null);
+  const [intelligenceToast, setIntelligenceToast] = useState('');
+  const [convertTargetMessage, setConvertTargetMessage] = useState(null);
 
   // Image Attachment state
   const [selectedImageFile, setSelectedImageFile] = useState(null);
@@ -611,6 +620,72 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
     }
   };
 
+  const handleSetCategory = async (msgId, category) => {
+    setActiveCategoryMenuMsgId(null);
+    setActiveActionMenuMsgId(null);
+    setMessages((prev) =>
+      prev.map((m) => (m._id === msgId ? { ...m, category } : m))
+    );
+
+    if (socket) {
+      socket.emit('update_message_category', { messageId: msgId, category });
+    } else {
+      try {
+        await api.patch(`/messages/${msgId}/category`, { category });
+      } catch (err) {
+        console.error('[Category Update Error]:', err.message);
+      }
+    }
+  };
+
+  const handleSaveMemory = async (msg) => {
+    setActiveActionMenuMsgId(null);
+    try {
+      const textToSave = msg.content || (msg.messageType ? `[${msg.messageType}]` : 'Saved memory');
+      await api.post('/intelligence/memories', {
+        conversationId: conversation._id,
+        messageId: msg._id,
+        text: textToSave
+      });
+      setIntelligenceToast('Saved to Chat Memory 🧠');
+      setTimeout(() => setIntelligenceToast(''), 3000);
+    } catch (err) {
+      console.error('[Save Memory Error]:', err.message);
+    }
+  };
+
+  const handleSaveFollowUp = async (msg) => {
+    setActiveActionMenuMsgId(null);
+    try {
+      const noteText = msg.content || (msg.messageType ? `[${msg.messageType}]` : 'Follow-up item');
+      await api.post('/intelligence/followups', {
+        conversationId: conversation._id,
+        messageId: msg._id,
+        note: noteText
+      });
+      setIntelligenceToast('Added to Follow-ups ⏰');
+      setTimeout(() => setIntelligenceToast(''), 3000);
+    } catch (err) {
+      console.error('[Save FollowUp Error]:', err.message);
+    }
+  };
+
+  const handleProposeDecision = async (msg) => {
+    setActiveActionMenuMsgId(null);
+    try {
+      const decisionText = msg.content || 'Proposed Group Decision';
+      await api.post('/intelligence/decisions', {
+        conversationId: conversation._id,
+        messageId: msg._id,
+        decisionText
+      });
+      setIntelligenceToast('Decision Proposed 🔒 (Open Intelligence to Confirm)');
+      setTimeout(() => setIntelligenceToast(''), 3500);
+    } catch (err) {
+      console.error('[Propose Decision Error]:', err.message);
+    }
+  };
+
   const renderStatusTicks = (msg) => {
     const isMe = (msg.sender?._id || msg.sender).toString() === currentUser._id.toString();
     if (!isMe) return null;
@@ -703,6 +778,33 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             )}
           </div>
         </div>
+
+        <button
+          onClick={() => {
+            setIntelligenceTab('summary');
+            setShowIntelligenceModal(true);
+          }}
+          aria-label="Raabta Intelligence"
+          title="Raabta Intelligence ✨ (Summary, Memories, Follow-ups, Important)"
+          className="action-icon-btn"
+          style={{
+            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
+            border: '1px solid rgba(99, 102, 241, 0.4)',
+            color: '#a855f7',
+            padding: '5px 10px',
+            borderRadius: '20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '5px',
+            cursor: 'pointer',
+            fontWeight: '600',
+            fontSize: '0.8rem',
+            flexShrink: 0
+          }}
+        >
+          <Sparkles size={16} style={{ color: '#a855f7' }} />
+          <span>✨ Intelligence</span>
+        </button>
 
         <button
           onClick={() => {
@@ -809,6 +911,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
             return (
               <div
                 key={msg._id}
+                id={`msg-${msg._id}`}
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
@@ -879,6 +982,53 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                         <Smile size={14} />
                       </button>
 
+                      <button
+                        onClick={() => setActiveCategoryMenuMsgId(activeCategoryMenuMsgId === msg._id ? null : msg._id)}
+                        aria-label="Set Category"
+                        title="Mark Category (Important, Task, Payment, Event, Study)"
+                        style={{ background: 'none', border: 'none', color: msg.category ? '#f59e0b' : 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Tag size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => handleSaveMemory(msg)}
+                        aria-label="Save Memory"
+                        title="Save to Chat Memory"
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Bookmark size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => handleSaveFollowUp(msg)}
+                        aria-label="Add Follow-up"
+                        title="Save as Follow-up / Reminder"
+                        style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <CheckSquare size={14} />
+                      </button>
+
+                      <button
+                        onClick={() => setConvertTargetMessage(msg)}
+                        aria-label="Convert to Action"
+                        title="Convert to Action (Task / Reminder / Plan)"
+                        style={{ background: 'none', border: 'none', color: '#a855f7', cursor: 'pointer', padding: '4px' }}
+                      >
+                        <Zap size={14} />
+                      </button>
+
+                      {isGroup && (
+                        <button
+                          onClick={() => handleProposeDecision(msg)}
+                          aria-label="Propose Decision"
+                          title="Propose Group Decision"
+                          style={{ background: 'none', border: 'none', color: '#10b981', cursor: 'pointer', padding: '4px' }}
+                        >
+                          <ShieldCheck size={14} />
+                        </button>
+                      )}
+
                       {isMe && !isImageMsg && msg.messageType !== 'gif' && msg.messageType !== 'sticker' && msg.messageType !== 'audio' && (
                         <button
                           onClick={() => handleStartEdit(msg)}
@@ -911,6 +1061,55 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                           <Flag size={14} />
                         </button>
                       )}
+                    </div>
+                  )}
+
+                  {/* Category Selection Popover Dropdown */}
+                  {activeCategoryMenuMsgId === msg._id && !isDeleted && (
+                    <div
+                      className="animate-scale-in"
+                      style={{
+                        position: 'absolute',
+                        top: '-46px',
+                        right: isMe ? '0' : 'auto',
+                        left: isMe ? 'auto' : '0',
+                        background: 'var(--bg-secondary, #1e293b)',
+                        border: '1px solid var(--border-color, #334155)',
+                        borderRadius: '16px',
+                        padding: '4px 8px',
+                        display: 'flex',
+                        gap: '6px',
+                        zIndex: 25,
+                        boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                        backdropFilter: 'blur(8px)'
+                      }}
+                    >
+                      {[
+                        { key: 'important', label: 'Important', icon: '⭐' },
+                        { key: 'task', label: 'Task', icon: '📝' },
+                        { key: 'payment', label: 'Payment', icon: '💳' },
+                        { key: 'event', label: 'Event', icon: '📅' },
+                        { key: 'study', label: 'Study', icon: '📚' },
+                        { key: null, label: 'Clear', icon: '❌' }
+                      ].map((item) => (
+                        <button
+                          key={item.key || 'clear'}
+                          onClick={() => handleSetCategory(msg._id, item.key)}
+                          title={item.label}
+                          style={{
+                            background: msg.category === item.key ? 'rgba(99, 102, 241, 0.3)' : 'transparent',
+                            border: 'none',
+                            borderRadius: '6px',
+                            cursor: 'pointer',
+                            fontSize: '1rem',
+                            padding: '4px 6px',
+                            display: 'flex',
+                            alignItems: 'center'
+                          }}
+                        >
+                          {item.icon}
+                        </button>
+                      ))}
                     </div>
                   )}
 
@@ -972,6 +1171,33 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                       overflowWrap: 'anywhere'
                     }}
                   >
+                    {/* Category Badge Indicator */}
+                    {msg.category && !isDeleted && (
+                      <div style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        padding: '2px 8px',
+                        borderRadius: '12px',
+                        fontSize: '0.72rem',
+                        fontWeight: '700',
+                        marginBottom: '6px',
+                        backgroundColor: msg.category === 'important' ? 'rgba(245, 158, 11, 0.25)' :
+                                         msg.category === 'task' ? 'rgba(59, 130, 246, 0.25)' :
+                                         msg.category === 'payment' ? 'rgba(16, 185, 129, 0.25)' :
+                                         msg.category === 'event' ? 'rgba(139, 92, 246, 0.25)' :
+                                         'rgba(236, 72, 153, 0.25)',
+                        color: msg.category === 'important' ? '#f59e0b' :
+                               msg.category === 'task' ? '#60a5fa' :
+                               msg.category === 'payment' ? '#34d399' :
+                               msg.category === 'event' ? '#c084fc' :
+                               '#f472b6'
+                      }}>
+                        <span>{msg.category === 'important' ? '⭐' : msg.category === 'task' ? '📝' : msg.category === 'payment' ? '💳' : msg.category === 'event' ? '📅' : '📚'}</span>
+                        <span style={{ textTransform: 'capitalize' }}>{msg.category}</span>
+                      </div>
+                    )}
+
                     {/* Replying Quote Banner */}
                     {msg.replyTo && !isDeleted && (
                       <div
@@ -1730,6 +1956,69 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           currentUser={currentUser}
           onClose={() => setIsGroupInfoOpen(false)}
           onGroupUpdated={onGroupUpdated}
+        />
+      )}
+
+      {/* Toast Notification Banner for Intelligence Actions */}
+      {intelligenceToast && (
+        <div style={{
+          position: 'absolute',
+          bottom: '80px',
+          left: '50%',
+          transform: 'translateX(-50%)',
+          backgroundColor: 'var(--bg-tertiary, #1e293b)',
+          color: '#ffffff',
+          border: '1px solid var(--accent-primary)',
+          padding: '8px 16px',
+          borderRadius: '20px',
+          fontSize: '0.85rem',
+          fontWeight: '600',
+          boxShadow: '0 4px 16px rgba(0,0,0,0.3)',
+          zIndex: 100,
+          display: 'flex',
+          alignItems: 'center',
+          gap: '6px'
+        }}>
+          <span>{intelligenceToast}</span>
+        </div>
+      )}
+
+      {/* Raabta Intelligence Modal */}
+      {showIntelligenceModal && (
+        <RaabtaIntelligenceModal
+          conversation={conversation}
+          currentUser={currentUser}
+          initialTab={intelligenceTab}
+          onClose={() => setShowIntelligenceModal(false)}
+          onJumpToMessage={(msgId) => {
+            setShowIntelligenceModal(false);
+            const el = document.getElementById(`msg-${msgId}`);
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+              el.style.transition = 'background-color 0.5s ease';
+              el.style.backgroundColor = 'rgba(99, 102, 241, 0.3)';
+              setTimeout(() => {
+                el.style.backgroundColor = 'transparent';
+              }, 2000);
+            }
+          }}
+        />
+      )}
+
+      {/* Convert Message to Action Modal */}
+      {convertTargetMessage && (
+        <ConvertToActionModal
+          message={convertTargetMessage}
+          conversation={conversation}
+          currentUser={currentUser}
+          onClose={() => setConvertTargetMessage(null)}
+          onActionCreated={({ type, data }) => {
+            setIntelligenceToast(type === 'plan' ? 'Raabta Plan Created 📅' : 'Task Action Created ⚡');
+            setTimeout(() => setIntelligenceToast(''), 3000);
+            if (type === 'plan' && data?.message) {
+              setMessages((prev) => [...prev, data.message]);
+            }
+          }}
         />
       )}
 

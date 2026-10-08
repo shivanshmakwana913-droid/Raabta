@@ -294,6 +294,49 @@ const initSocketServer = (io) => {
       }
     });
 
+    // Real-Time Update Message Category
+    socket.on('update_message_category', async (data, callback) => {
+      try {
+        const { messageId, category } = data || {};
+        const allowedCategories = ['important', 'task', 'payment', 'event', 'study', null];
+        if (category !== null && !allowedCategories.includes(category)) {
+          if (callback) callback({ status: 'error', message: 'Invalid category' });
+          return;
+        }
+
+        const msg = await Message.findById(messageId);
+        if (!msg || msg.isDeleted) {
+          if (callback) callback({ status: 'error', message: 'Message not found' });
+          return;
+        }
+
+        msg.category = category;
+        await msg.save();
+
+        const updatedMessage = await Message.findById(msg._id)
+          .populate('sender', 'name username avatar')
+          .populate({
+            path: 'replyTo',
+            select: 'content messageType imageUrl audioUrl audioDuration sender isDeleted',
+            populate: { path: 'sender', select: 'name username avatar' }
+          })
+          .populate('reactions.user', 'name username avatar')
+          .populate({
+            path: 'plan',
+            populate: [
+              { path: 'creator', select: 'name username avatar' },
+              { path: 'responses.user', select: 'name username avatar' }
+            ]
+          });
+
+        io.to(updatedMessage.conversation.toString()).emit('message_updated', updatedMessage);
+        if (callback) callback({ status: 'ok', data: updatedMessage });
+      } catch (err) {
+        console.error('[Socket update_message_category error]:', err.message);
+        if (callback) callback({ status: 'error', message: err.message });
+      }
+    });
+
     // Mark Messages as Seen
     socket.on('mark_messages_seen', async (data, callback) => {
       try {

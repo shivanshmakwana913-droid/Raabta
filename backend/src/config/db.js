@@ -59,26 +59,24 @@ const connectDB = async () => {
     const userCount = await User.countDocuments();
     if (userCount === 0) {
       console.log('[Seeding Default Demo Users...]');
-      await User.create([
-        {
-          name: 'Demo User',
-          username: 'demouser',
-          normalizedUsername: 'demouser',
-          email: 'demo@raabta.com',
-          password: 'password123',
-          phoneNumber: '+1234567890',
-          phoneNumberVerified: true
-        },
-        {
-          name: 'Shivansh Makwana',
-          username: 'shivansh',
-          normalizedUsername: 'shivansh',
-          email: 'shivansh@raabta.com',
-          password: 'password123',
-          phoneNumber: '+919876543210',
-          phoneNumberVerified: true
-        }
-      ]);
+      await User.create({
+        name: 'Demo User',
+        username: 'demouser',
+        normalizedUsername: 'demouser',
+        email: 'demo@raabta.com',
+        password: 'password123',
+        phoneNumber: '+1234567890',
+        phoneNumberVerified: true
+      });
+      await User.create({
+        name: 'Shivansh Makwana',
+        username: 'shivansh',
+        normalizedUsername: 'shivansh',
+        email: 'shivansh@raabta.com',
+        password: 'password123',
+        phoneNumber: '+919876543210',
+        phoneNumberVerified: true
+      });
       console.log('[Demo Users Seeded]: username: "demouser" / "shivansh", password: "password123"');
     }
   } catch (seedErr) {
