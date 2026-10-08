@@ -754,4 +754,83 @@ select:focus-visible,
   }
 }
 
+/* ==========================================================================
+   RAABTA INTELLIGENCE MODAL & MOBILE OVERLAY RESPONSIVE FIXES
+   ========================================================================== */
+.raabta-intelligence-overlay {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(5, 8, 15, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  z-index: 9995;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  box-sizing: border-box;
+}
+
+.raabta-intelligence-modal-card {
+  background-color: var(--bg-secondary, #131b2e);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 24px;
+  width: 100%;
+  max-width: 760px;
+  max-height: 88vh;
+  max-height: 88dvh;
+  display: flex;
+  flex-direction: column;
+  box-shadow: var(--shadow-lg);
+  overflow: hidden;
+  color: var(--text-primary);
+  box-sizing: border-box;
+}
+
+.raabta-intelligence-tabs {
+  display: flex;
+  gap: 6px;
+  padding: 8px 12px;
+  background-color: var(--bg-primary, #0b0f19);
+  border-bottom: 1px solid var(--border-color, rgba(255, 255, 255, 0.08));
+  overflow-x: auto;
+  white-space: nowrap;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  flex-shrink: 0;
+}
+
+.raabta-intelligence-tabs::-webkit-scrollbar {
+  display: none;
+}
+
+.raabta-intelligence-tab-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+@media (max-width: 640px) {
+  .raabta-intelligence-overlay {
+    padding: 0 !important;
+    align-items: flex-end !important;
+  }
+
+  .raabta-intelligence-modal-card {
+    max-width: 100% !important;
+    width: 100vw !important;
+    max-height: 92vh !important;
+    max-height: 92dvh !important;
+    border-bottom-left-radius: 0 !important;
+    border-bottom-right-radius: 0 !important;
+    border-top-left-radius: 24px !important;
+    border-top-right-radius: 24px !important;
+  }
+
+  .raabta-intelligence-tab-btn {
+    padding: 6px 10px !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+
 

@@ -389,21 +389,22 @@ const SettingsModal = ({ onClose }) => {
     e.preventDefault();
     clearAlerts();
 
-    if (!deletePassword) {
-      setErrorMsg('Password confirmation is required to delete account');
-      return;
-    }
-
-    if (!window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
+    if (!window.confirm('Are you absolutely sure you want to permanently delete your account? This action cannot be undone.')) {
       return;
     }
 
     try {
       setDeleteSubmitting(true);
-      await api.delete('/users/account', { data: { password: deletePassword } });
+      await api.delete('/users/account', {
+        data: { password: deletePassword },
+        timeout: 15000
+      });
+      setDeleteSubmitting(false);
       logout();
+      if (onClose) onClose();
     } catch (err) {
-      setErrorMsg(err.response?.data?.message || err.message || 'Failed to delete account');
+      console.error('[Delete Account Error]:', err);
+      setErrorMsg(err.response?.data?.message || err.message || 'Failed to delete account. Please verify your password and try again.');
       setDeleteSubmitting(false);
     }
   };

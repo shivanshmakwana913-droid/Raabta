@@ -15,8 +15,8 @@ const protect = async (req, res, next) => {
 
       req.user = await User.findById(decoded.id).select('-password');
 
-      if (!req.user) {
-        return res.status(401).json({ message: 'User not found or token invalid' });
+      if (!req.user || req.user.isDeleted) {
+        return res.status(401).json({ message: 'Account not found or has been deleted.' });
       }
 
       if (req.user.status === 'suspended' || req.user.status === 'banned') {

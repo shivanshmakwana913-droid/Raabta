@@ -378,40 +378,58 @@ const updatePrivacySettings = async (req, res, next) => {
 // @access  Private
 const deleteAccount = async (req, res, next) => {
   try {
-    const { password } = req.body;
-    if (!password) {
-      res.status(400);
-      throw new Error('Password is required to confirm account deletion');
-    }
-
+    const { password } = req.body || {};
     const user = await User.findById(req.user._id).select('+password');
     if (!user) {
       res.status(404);
-      throw new Error('User not found');
+      throw new Error('User account not found');
     }
 
-    const isMatch = await user.matchPassword(password);
-    if (!isMatch) {
+    if (user.isDeleted) {
       res.status(400);
-      throw new Error('Incorrect password');
+      throw new Error('This account has already been deleted');
     }
 
-    // Safely anonymize profile data while maintaining DB reference integrity
+    // Verify password if user has a password set
+    if (user.password) {
+      if (!password || !password.trim()) {
+        res.status(400);
+        throw new Error('Password confirmation is required to delete account');
+      }
+
+      const isMatch = await user.matchPassword(password.trim());
+      if (!isMatch) {
+        res.status(400);
+        throw new Error('Incorrect password. Please try again.');
+      }
+    }
+
+    const uniqueId = user._id.toString().substring(0, 8);
+
+    // Anonymize user credentials while preserving MongoDB ObjectId references
     user.name = 'Deleted User';
-    user.username = `deleted_${user._id.toString().substring(0, 8)}`;
-    user.normalizedUsername = `deleted_${user._id.toString().substring(0, 8)}`;
-    user.email = `deleted_${user._id}@deleted.local`;
+    user.username = `deleted_${uniqueId}`;
+    user.normalizedUsername = `deleted_${uniqueId}`;
+    user.email = `deleted_${user._id.toString()}@deleted.local`;
     user.password = `deleted_${Date.now()}`;
     user.bio = 'This account has been deleted.';
     user.avatar = 'https://api.dicebear.com/7.x/bottts/svg?seed=deleted';
     user.isOnline = false;
     user.isDeleted = true;
+    user.status = 'banned';
     user.blockedUsers = [];
+    user.phoneNumber = null; // Reset phone number so unique sparse index doesn't conflict
+    user.phoneNumberVerified = false;
+    user.phoneNumberVerifiedAt = null;
 
     await user.save();
 
-    res.status(200).json({ message: 'Account deleted successfully' });
+    res.status(200).json({
+      success: true,
+      message: 'Account permanently deleted and anonymized successfully'
+    });
   } catch (error) {
+    console.error('[Account Deletion Error]:', error.message);
     next(error);
   }
 };

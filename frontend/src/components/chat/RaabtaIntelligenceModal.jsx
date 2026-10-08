@@ -306,7 +306,7 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
       justifyContent: 'center',
       padding: '16px'
     }}>
-      <div style={{
+      <div className="raabta-intelligence-modal-card" style={{
         backgroundColor: 'var(--bg-secondary, #1e293b)',
         border: '1px solid var(--border-color, #334155)',
         borderRadius: '16px',
@@ -368,7 +368,7 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
         </div>
 
         {/* Tab Navigation */}
-        <div style={{
+        <div className="raabta-intelligence-tabs" style={{
           display: 'flex',
           gap: '4px',
           padding: '8px 12px',
@@ -377,6 +377,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           overflowX: 'auto'
         }}>
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('dashboard')}
             style={{
               padding: '8px 12px',
@@ -396,6 +398,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('decisions')}
             style={{
               padding: '8px 12px',
@@ -415,6 +419,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('summary')}
             style={{
               padding: '8px 12px',
@@ -434,6 +440,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('memories')}
             style={{
               padding: '8px 12px',
@@ -453,6 +461,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('categories')}
             style={{
               padding: '8px 12px',
@@ -472,6 +482,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('followups')}
             style={{
               padding: '8px 12px',
@@ -491,6 +503,8 @@ const RaabtaIntelligenceModal = ({ conversation, currentUser, initialTab = 'dash
           </button>
 
           <button
+            type="button"
+            className="raabta-intelligence-tab-btn"
             onClick={() => setActiveTab('search')}
             style={{
               padding: '8px 12px',
