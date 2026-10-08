@@ -66,7 +66,8 @@ const connectDB = async () => {
         email: 'demo@raabta.com',
         password: 'password123',
         phoneNumber: '+1234567890',
-        phoneNumberVerified: true
+        phoneNumberVerified: true,
+        role: 'user'
       });
       await User.create({
         name: 'Shivansh Makwana',
@@ -75,9 +76,27 @@ const connectDB = async () => {
         email: 'shivansh@raabta.com',
         password: 'password123',
         phoneNumber: '+919876543210',
-        phoneNumberVerified: true
+        phoneNumberVerified: true,
+        role: 'admin'
       });
-      console.log('[Demo Users Seeded]: username: "demouser" / "shivansh", password: "password123"');
+      console.log('[Demo Users Seeded]: username: "demouser" (user) / "shivansh" (admin), password: "password123"');
+    } else {
+      // Ensure at least one admin account exists for owner access
+      const adminExists = await User.findOne({ role: 'admin' });
+      if (!adminExists) {
+        const ownerCandidate = await User.findOne({
+          $or: [
+            { username: process.env.ADMIN_USERNAME || 'shivansh' },
+            { email: process.env.ADMIN_EMAIL || 'shivansh@raabta.com' },
+            { username: 'demouser' }
+          ]
+        });
+        if (ownerCandidate) {
+          ownerCandidate.role = 'admin';
+          await ownerCandidate.save();
+          console.log(`[Admin Role Provisioned]: Promoted ${ownerCandidate.username} to Admin`);
+        }
+      }
     }
   } catch (seedErr) {
     console.warn('[Seed Warning]:', seedErr.message);

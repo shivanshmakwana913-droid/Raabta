@@ -254,8 +254,8 @@ const Sidebar = ({
               notifPermission === 'granted'
                 ? 'Notifications Enabled'
                 : notifPermission === 'denied'
-                ? 'Notifications Blocked in Browser Settings'
-                : 'Enable Browser Notifications'
+                  ? 'Notifications Blocked in Browser Settings'
+                  : 'Enable Browser Notifications'
             }
             className="action-icon-btn"
             style={{ color: notifPermission === 'granted' ? 'var(--accent-primary)' : 'var(--text-muted)' }}
@@ -292,8 +292,8 @@ const Sidebar = ({
               searchTab === 'chats'
                 ? 'Filter conversations...'
                 : searchTab === 'messages'
-                ? 'Search message text...'
-                : 'Search users...'
+                  ? 'Search message text...'
+                  : 'Search users...'
             }
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}

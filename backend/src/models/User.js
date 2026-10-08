@@ -94,6 +94,16 @@ const userSchema = new mongoose.Schema(
     phoneNumberVerifiedAt: {
       type: Date,
       default: null
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin'],
+      default: 'user'
+    },
+    status: {
+      type: String,
+      enum: ['active', 'suspended', 'banned'],
+      default: 'active'
     }
   },
   {
@@ -135,6 +145,8 @@ userSchema.methods.toAuthJSON = function () {
     email: this.email,
     avatar: this.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${this.username}`,
     bio: this.bio || '',
+    role: this.role || 'user',
+    status: this.status || 'active',
     privacySettings: this.privacySettings || { lastSeen: 'everyone', onlineStatus: 'everyone', profile: 'everyone' },
     blockedUsers: this.blockedUsers || [],
     phoneNumberVerified: Boolean(this.phoneNumberVerified),

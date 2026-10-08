@@ -19,6 +19,10 @@ const protect = async (req, res, next) => {
         return res.status(401).json({ message: 'User not found or token invalid' });
       }
 
+      if (req.user.status === 'suspended' || req.user.status === 'banned') {
+        return res.status(403).json({ message: 'Your account has been suspended or banned by administration.' });
+      }
+
       return next();
     } catch (error) {
       console.error('[Auth Middleware Error]:', error.message);
@@ -29,6 +33,16 @@ const protect = async (req, res, next) => {
   if (!token) {
     return res.status(401).json({ message: 'Not authorized, no token provided' });
   }
+};
+
+const adminOnly = (req, res, next) => {
+  if (req.user && req.user.role === 'admin') {
+    if (req.user.status === 'suspended' || req.user.status === 'banned') {
+      return res.status(403).json({ message: 'Admin account suspended' });
+    }
+    return next();
+  }
+  return res.status(403).json({ message: 'Access denied: Owner/Admin privileges required' });
 };
 
 const optionalProtect = async (req, res, next) => {
@@ -47,4 +61,4 @@ const optionalProtect = async (req, res, next) => {
   next();
 };
 
-module.exports = { protect, optionalProtect };
+module.exports = { protect, adminOnly, optionalProtect };
