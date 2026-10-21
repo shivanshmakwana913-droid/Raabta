@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download, Calendar, Tag, Bookmark, CheckSquare, ShieldCheck, Zap } from 'lucide-react';
+import { Send, ArrowLeft, Check, CheckCheck, Image as ImageIcon, X, Info, Reply, Edit3, Trash2, Smile, CornerUpLeft, ChevronDown, Flag, Film, Sparkles, Mic, Volume2, VolumeX, Phone, PhoneIncoming, PhoneOutgoing, PhoneMissed, Video, Download, Calendar, Tag, Bookmark, CheckSquare, ShieldCheck, Zap, MoreVertical } from 'lucide-react';
 import api, { getMediaUrl } from '../../services/api';
 import { useSocket } from '../../context/SocketContext';
 import { useCall } from '../../context/CallContext';
@@ -52,6 +52,25 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
 
   // Audio Sound state
   const [isMuted, setIsMuted] = useState(getIsSoundMuted());
+  const [showMoreHeaderMenu, setShowMoreHeaderMenu] = useState(false);
+  const headerMenuRef = useRef(null);
+
+  // Close header menu on outside click or tap
+  useEffect(() => {
+    const handleMenuOutsideClick = (e) => {
+      if (headerMenuRef.current && !headerMenuRef.current.contains(e.target)) {
+        setShowMoreHeaderMenu(false);
+      }
+    };
+    if (showMoreHeaderMenu) {
+      document.addEventListener('mousedown', handleMenuOutsideClick);
+      document.addEventListener('touchstart', handleMenuOutsideClick);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleMenuOutsideClick);
+      document.removeEventListener('touchstart', handleMenuOutsideClick);
+    };
+  }, [showMoreHeaderMenu]);
 
   // Media Pickers & Voice States (GIFs, Stickers, Emojis, Voice, Plans)
   const [showGifPicker, setShowGifPicker] = useState(false);
@@ -82,7 +101,9 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         return pId && myId && pId.toString() !== myId.toString();
       }) || (typeof conversation.participants?.[0] === 'object' ? conversation.participants?.[0] : {});
 
-  const headerName = isGroup ? conversation.groupName || 'Group Chat' : recipient?.name || recipient?.username;
+  const headerName = isGroup
+    ? (conversation.groupName || 'Group Chat')
+    : (recipient?.name || recipient?.username || recipient?.email?.split('@')[0] || 'User');
   const headerAvatar = isGroup
     ? getMediaUrl(conversation.groupAvatar) || `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(headerName)}`
     : getMediaUrl(recipient?.avatar) || `https://api.dicebear.com/7.x/bottts/svg?seed=${recipient?.username || 'user'}`;
@@ -716,27 +737,17 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', background: 'var(--bg-primary)', position: 'relative' }}>
       {/* Header */}
-      <div style={{
-        padding: '12px 20px',
-        background: 'var(--bg-secondary)',
-        borderBottom: '1px solid var(--border-color)',
-        display: 'flex',
-        alignItems: 'center',
-        gap: '12px',
-        boxShadow: 'var(--shadow-sm)',
-        zIndex: 10
-      }}>
+      <div className="chat-header">
         <button
           onClick={onBackMobile}
           aria-label="Back to conversations"
           title="Back to conversations"
           className="mobile-back-btn action-icon-btn"
-          style={{ display: 'none' }}
         >
           <ArrowLeft size={20} />
         </button>
 
-        <div style={{ position: 'relative', flexShrink: 0 }}>
+        <div className="chat-header-avatar">
           <img
             src={headerAvatar}
             alt={headerName}
@@ -746,30 +757,25 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
                 ? `https://api.dicebear.com/7.x/identicon/svg?seed=${encodeURIComponent(headerName)}`
                 : `https://api.dicebear.com/7.x/bottts/svg?seed=${recipient?.username || 'user'}`;
             }}
-            style={{ width: '42px', height: '42px', borderRadius: '50%', objectFit: 'cover', border: '1px solid var(--border-color)' }}
           />
           {!isGroup && (
-            <span style={{
-              position: 'absolute',
-              bottom: 0,
-              right: 0,
-              width: '12px',
-              height: '12px',
-              borderRadius: '50%',
-              backgroundColor: recipient?.isOnline ? 'var(--status-online)' : 'var(--status-offline)',
-              border: '2px solid var(--bg-secondary)',
-              boxShadow: recipient?.isOnline ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none'
-            }} />
+            <span
+              className="online-status-dot"
+              style={{
+                backgroundColor: recipient?.isOnline ? 'var(--status-online)' : 'var(--status-offline)',
+                boxShadow: recipient?.isOnline ? '0 0 8px rgba(16, 185, 129, 0.6)' : 'none'
+              }}
+            />
           )}
         </div>
 
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <h3 style={{ fontSize: '1rem', fontWeight: '700', color: 'var(--text-primary)', margin: 0, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+        <div className="chat-header-info">
+          <h3 className="chat-header-name">
             {headerName}
           </h3>
-          <div style={{ fontSize: '0.78rem', color: renderTypingText() ? 'var(--accent-primary)' : 'var(--text-secondary)' }}>
+          <div className="chat-header-status">
             {renderTypingText() ? (
-              <span className="animate-pulse" style={{ fontWeight: '600' }}>{renderTypingText()}</span>
+              <span className="animate-pulse typing-text">{renderTypingText()}</span>
             ) : isGroup ? (
               <span>{conversation.participants?.length || 0} members</span>
             ) : (
@@ -778,96 +784,145 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           </div>
         </div>
 
-        <button
-          onClick={() => {
-            setIntelligenceTab('summary');
-            setShowIntelligenceModal(true);
-          }}
-          aria-label="Raabta Intelligence"
-          title="Raabta Intelligence ✨ (Summary, Memories, Follow-ups, Important)"
-          className="action-icon-btn"
-          style={{
-            background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.2) 0%, rgba(168, 85, 247, 0.2) 100%)',
-            border: '1px solid rgba(99, 102, 241, 0.4)',
-            color: '#a855f7',
-            padding: '5px 10px',
-            borderRadius: '20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '5px',
-            cursor: 'pointer',
-            fontWeight: '600',
-            fontSize: '0.8rem',
-            flexShrink: 0
-          }}
-        >
-          <Sparkles size={16} style={{ color: '#a855f7' }} />
-          <span>✨ Intelligence</span>
-        </button>
+        <div className="chat-header-actions">
+          {/* Intelligence Button */}
+          <button
+            onClick={() => {
+              setIntelligenceTab('summary');
+              setShowIntelligenceModal(true);
+            }}
+            aria-label="Raabta Intelligence"
+            title="Raabta Intelligence ✨ (Summary, Memories, Follow-ups, Important)"
+            className="chat-intelligence-btn"
+          >
+            <Sparkles size={16} style={{ color: '#a855f7', flexShrink: 0 }} />
+            <span className="chat-intelligence-btn-text">Intelligence</span>
+          </button>
 
-        <button
-          onClick={() => {
-            const muted = toggleSoundMute();
-            setIsMuted(muted);
-          }}
-          aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
-          title={isMuted ? "Unmute Message Sounds" : "Mute Message Sounds"}
-          className="action-icon-btn"
-        >
-          {isMuted ? <VolumeX size={19} style={{ color: 'var(--text-muted)' }} /> : <Volume2 size={19} style={{ color: 'var(--accent-primary)' }} />}
-        </button>
+          {/* Voice & Video Calls for 1-on-1 */}
+          {!isGroup && (
+            <div className="chat-header-calls">
+              <button
+                onClick={() => {
+                  const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
+                  startCall({ conversationId: conversation._id, targetUser: target, callType: 'audio' });
+                }}
+                aria-label="Start Audio Call"
+                title="Start Audio Call"
+                className="action-icon-btn call-action-btn"
+              >
+                <Phone size={18} style={{ color: '#10b981' }} />
+              </button>
+              <button
+                onClick={() => {
+                  const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
+                  startCall({ conversationId: conversation._id, targetUser: target, callType: 'video' });
+                }}
+                aria-label="Start Video Call"
+                title="Start Video Call"
+                className="action-icon-btn call-action-btn"
+              >
+                <Video size={18} style={{ color: '#a855f7' }} />
+              </button>
+            </div>
+          )}
 
-        {!isGroup && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          {/* Sound Mute Button on desktop */}
+          <button
+            onClick={() => {
+              const muted = toggleSoundMute();
+              setIsMuted(muted);
+            }}
+            aria-label={isMuted ? "Unmute sounds" : "Mute sounds"}
+            title={isMuted ? "Unmute Message Sounds" : "Mute Message Sounds"}
+            className="action-icon-btn hide-on-mobile"
+          >
+            {isMuted ? <VolumeX size={19} style={{ color: 'var(--text-muted)' }} /> : <Volume2 size={19} style={{ color: 'var(--accent-primary)' }} />}
+          </button>
+
+          {/* Report Button on desktop */}
+          {!isGroup && recipient && onRequestReport && (
             <button
-              onClick={() => {
-                const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
-                startCall({ conversationId: conversation._id, targetUser: target, callType: 'audio' });
-              }}
-              aria-label="Start Audio Call"
-              title="Start Audio Call"
-              className="action-icon-btn"
-              style={{ flexShrink: 0 }}
+              onClick={() => onRequestReport({ user: recipient, message: null })}
+              aria-label="Report user"
+              title="Report User"
+              className="action-icon-btn hide-on-mobile"
+              style={{ color: '#f87171' }}
             >
-              <Phone size={19} style={{ color: '#10b981' }} />
+              <Flag size={18} />
             </button>
+          )}
+
+          {/* Group Details Button on desktop */}
+          {isGroup && (
             <button
-              onClick={() => {
-                const target = (recipient && (recipient._id || recipient.id)) ? recipient : conversation.participants?.find((p) => p && (p._id || p).toString() !== currentUser._id.toString()) || recipient;
-                startCall({ conversationId: conversation._id, targetUser: target, callType: 'video' });
-              }}
-              aria-label="Start Video Call"
-              title="Start Video Call"
-              className="action-icon-btn"
-              style={{ flexShrink: 0 }}
+              onClick={() => setIsGroupInfoOpen(true)}
+              aria-label="Group details"
+              title="Group details"
+              className="action-icon-btn hide-on-mobile"
             >
-              <Video size={19} style={{ color: '#a855f7' }} />
+              <Info size={20} />
             </button>
+          )}
+
+          {/* Mobile More Options Dropdown (Three Dots) */}
+          <div className="chat-header-more-container show-on-mobile" ref={headerMenuRef}>
+            <button
+              type="button"
+              onClick={() => setShowMoreHeaderMenu((prev) => !prev)}
+              aria-label="More options"
+              title="More Options"
+              className="action-icon-btn header-more-btn"
+            >
+              <MoreVertical size={18} />
+            </button>
+
+            {showMoreHeaderMenu && (
+              <div className="chat-header-dropdown animate-scale-in">
+                <button
+                  type="button"
+                  onClick={() => {
+                    const muted = toggleSoundMute();
+                    setIsMuted(muted);
+                    setShowMoreHeaderMenu(false);
+                  }}
+                  className="chat-dropdown-item"
+                >
+                  {isMuted ? <Volume2 size={16} /> : <VolumeX size={16} />}
+                  <span>{isMuted ? "Unmute Sounds" : "Mute Sounds"}</span>
+                </button>
+
+                {isGroup && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setIsGroupInfoOpen(true);
+                      setShowMoreHeaderMenu(false);
+                    }}
+                    className="chat-dropdown-item"
+                  >
+                    <Info size={16} />
+                    <span>Group Details</span>
+                  </button>
+                )}
+
+                {!isGroup && recipient && onRequestReport && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onRequestReport({ user: recipient, message: null });
+                      setShowMoreHeaderMenu(false);
+                    }}
+                    className="chat-dropdown-item danger"
+                  >
+                    <Flag size={16} />
+                    <span>Report User</span>
+                  </button>
+                )}
+              </div>
+            )}
           </div>
-        )}
-
-        {!isGroup && recipient && onRequestReport && (
-          <button
-            onClick={() => onRequestReport({ user: recipient, message: null })}
-            aria-label="Report user"
-            title="Report User"
-            className="action-icon-btn"
-            style={{ color: '#f87171', flexShrink: 0 }}
-          >
-            <Flag size={18} />
-          </button>
-        )}
-
-        {isGroup && (
-          <button
-            onClick={() => setIsGroupInfoOpen(true)}
-            aria-label="Group details"
-            title="Group details"
-            className="action-icon-btn"
-          >
-            <Info size={20} />
-          </button>
-        )}
+        </div>
       </div>
 
       {/* Messages Scroll Area */}
@@ -878,14 +933,7 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
           setActiveActionMenuMsgId(null);
           setActiveReactionMenuMsgId(null);
         }}
-        style={{
-          flex: 1,
-          overflowY: 'auto',
-          padding: '16px 20px',
-          display: 'flex',
-          flexDirection: 'column',
-          position: 'relative'
-        }}
+        className="chat-messages-container"
       >
         {loading ? (
           <ChatSkeleton />

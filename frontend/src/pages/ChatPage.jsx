@@ -346,7 +346,9 @@ const ChatPage = () => {
       {/* Main Chat Window */}
       <div className={`chat-wrapper ${selectedConversation ? 'mobile-visible' : 'mobile-hidden'}`} style={{
         flex: 1,
-        height: '100%'
+        height: '100%',
+        minWidth: 0,
+        overflow: 'hidden'
       }}>
         {selectedConversation ? (
           <ChatWindow
