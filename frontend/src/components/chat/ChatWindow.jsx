@@ -137,13 +137,12 @@ const ChatWindow = ({ conversation, currentUser, onBackMobile, onUpdateLastMessa
         else if (showGifPicker) setShowGifPicker(false);
         else if (showStickerPicker) setShowStickerPicker(false);
         else if (activeReactionMenuMsgId) setActiveReactionMenuMsgId(null);
-        else if (editingMessage) handleCancelEdit();
         else if (replyingToMessage) setReplyingToMessage(null);
       }
     };
     window.addEventListener('keydown', handleKeyDown);
     return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [fullImageViewUrl, showPlanModal, isRecordingVoice, showEmojiPicker, showGifPicker, showStickerPicker, activeReactionMenuMsgId, editingMessage, replyingToMessage]);
+  }, [fullImageViewUrl, showPlanModal, isRecordingVoice, showEmojiPicker, showGifPicker, showStickerPicker, activeReactionMenuMsgId, replyingToMessage]);
 
   // Lock body scroll when image lightbox is open
   useEffect(() => {

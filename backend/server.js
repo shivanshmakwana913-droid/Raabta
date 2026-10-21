@@ -78,6 +78,9 @@ app.use('/api/users/search', searchLimiter);
 app.use('/api/messages/search', searchLimiter);
 
 // Health Check Endpoint
+app.get('/', (req, res) => {
+  res.status(200).json({ status: 'ok', message: 'Raabta Backend API Running' });
+});
 app.get('/api/health', (req, res) => {
   res.status(200).json({ status: 'ok', message: 'Raabta Backend API Running' });
 });
